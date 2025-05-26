@@ -168,6 +168,7 @@ function RouteComponent() {
     if (inAudioCall) {
       pc.ontrack = (event) => {
         console.log("Remote Audio");
+        console.log(event.streams[0]);
 
         if (remoteAudioRef.current)
           remoteAudioRef.current.srcObject = event.streams[0];
@@ -619,8 +620,8 @@ function RouteComponent() {
                 <video
                   ref={localVideoRef}
                   autoPlay
+                  muted
                   controls
-                  playsInline
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2 text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
@@ -634,7 +635,6 @@ function RouteComponent() {
                   ref={remoteVideoRef}
                   autoPlay
                   controls
-                  playsInline
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2 text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
