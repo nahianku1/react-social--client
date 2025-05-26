@@ -307,10 +307,9 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io(
-      "https://react-social-server.onrender.com",
-      { withCredentials: true }
-    );
+    socketRef.current = io("https://react-social-server.onrender.com", {
+      withCredentials: true,
+    });
     return () => {
       socketRef.current?.disconnect();
     };
@@ -812,7 +811,7 @@ function RouteComponent() {
             </div>
 
             {/* Sheet for Online Users (Mobile) */}
-            <div className="sm:hidden absolute left-2 top-2 z-30">
+            <div className="sm:hidden  absolute left-2 top-2 z-30">
               <Sheet>
                 <SheetTrigger asChild>
                   <Button
@@ -820,10 +819,22 @@ function RouteComponent() {
                     className="bg-white/20 text-white hover:bg-white/30"
                   >
                     <span className="sr-only">Open Online Users</span>
-                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    <svg
+                      width="24"
+                      height="24"
+                      fill="white"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-64 bg-white/10 backdrop-blur-md p-4 space-y-2">
+                <SheetContent
+                  side="left"
+                  className="w-64 bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 backdrop-blur-md p-4 space-y-2"
+                >
                   <h2 className="text-lg font-semibold mb-2">Online Users</h2>
                   <p>{id}</p>
                   {onlineusers.map((user) => (
