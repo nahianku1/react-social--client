@@ -24,6 +24,7 @@ import {
 
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 type message = {
   id: string;
@@ -743,7 +744,7 @@ function RouteComponent() {
         <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 text-white flex flex-col">
           {/* Top Bar */}
           <div className="flex justify-between items-center px-6 py-4 bg-white/10 backdrop-blur-md shadow-md">
-            <h1 className="text-xl font-semibold">Chat App</h1>
+            <h1 className="text-xl ml-8 font-semibold">Chat App</h1>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="cursor-pointer border-2 border-white">
@@ -769,7 +770,7 @@ function RouteComponent() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* Sidebar - Online Users */}
+            {/* Sidebar - Online Users (Desktop) */}
             <div className="hidden sm:block w-64 bg-white/10 backdrop-blur-md p-4 space-y-2 overflow-y-auto">
               <h2 className="text-lg font-semibold mb-2">Online Users</h2>
               <p>{id}</p>
@@ -788,7 +789,6 @@ function RouteComponent() {
                         />
                       </Avatar>
                     </div>
-
                     <span>{user?.name}</span>
                   </div>
                   <div className="flex  gap-2">
@@ -797,24 +797,78 @@ function RouteComponent() {
                       disabled={user.id === id}
                       className="w-8 h-8 cursor-pointer"
                     >
-                      <VideoIcon></VideoIcon>
+                      <VideoIcon />
                     </Button>
                     <Button
                       onClick={() => handleAudioCall(user?.id)}
                       disabled={user.id === id}
                       className="w-8 h-8 cursor-pointer"
                     >
-                      <PhoneCall></PhoneCall>
+                      <PhoneCall />
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
 
+            {/* Sheet for Online Users (Mobile) */}
+            <div className="sm:hidden absolute left-2 top-2 z-30">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="bg-white/20 text-white hover:bg-white/30"
+                  >
+                    <span className="sr-only">Open Online Users</span>
+                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-64 bg-white/10 backdrop-blur-md p-4 space-y-2">
+                  <h2 className="text-lg font-semibold mb-2">Online Users</h2>
+                  <p>{id}</p>
+                  {onlineusers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
+                    >
+                      <div className="flex justify-start gap-2">
+                        <div className="relative w-8 h-8 ">
+                          <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
+                          <Avatar className="w-full h-full absolute">
+                            <AvatarImage
+                              src="https://i.pravatar.cc/300"
+                              alt="User"
+                            />
+                          </Avatar>
+                        </div>
+                        <span>{user?.name}</span>
+                      </div>
+                      <div className="flex  gap-2">
+                        <Button
+                          onClick={() => handleCall(user?.id)}
+                          disabled={user.id === id}
+                          className="w-8 h-8 cursor-pointer"
+                        >
+                          <VideoIcon />
+                        </Button>
+                        <Button
+                          onClick={() => handleAudioCall(user?.id)}
+                          disabled={user.id === id}
+                          className="w-8 h-8 cursor-pointer"
+                        >
+                          <PhoneCall />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </SheetContent>
+              </Sheet>
+            </div>
+
             {/* Chat Section */}
-            <div className="flex-1 relative flex flex-col bg-white rounded-tl-3xl rounded-bl-3xl overflow-hidden">
+            <div className="flex-1 relative flex flex-col bg-white overflow-hidden min-h-0">
               {/* Message List */}
-              <ScrollArea className="flex-1 p-4">
+              <ScrollArea className="flex-1 p-4 min-h-0">
                 <div className="flex flex-col gap-3">
                   {messages.map((msg, index) => (
                     <div
@@ -867,7 +921,7 @@ function RouteComponent() {
                   <Input
                     placeholder="Type a message..."
                     className="bg-gray-100 text-black placeholder:text-gray-500"
-                  />{" "}
+                  />
                   <div>
                     <Input
                       type="file"
@@ -881,7 +935,7 @@ function RouteComponent() {
                       onClick={() => fileInputRef.current?.click()}
                       className="bg-purple-600 text-white hover:bg-purple-700"
                     >
-                      <FileArchive></FileArchive>
+                      <FileArchive />
                     </Button>
                   </div>
                   <Button
