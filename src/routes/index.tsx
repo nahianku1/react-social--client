@@ -378,7 +378,18 @@ function RouteComponent() {
       console.log({ inCall, inAudioCall });
 
       navigator?.mediaDevices
-        ?.getUserMedia({ video: true, audio: true })
+        ?.getUserMedia({
+          video: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        })
         .then((stream) => {
           localStreamRef.current = stream;
           if (localVideoRef.current) localVideoRef.current.srcObject = stream;
@@ -399,7 +410,18 @@ function RouteComponent() {
       console.log("Getting user media!!");
 
       navigator?.mediaDevices
-        ?.getUserMedia({ video: true, audio: true })
+        ?.getUserMedia({
+          video: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        })
         .then((stream) => {
           localStreamRef.current = stream;
           console.log(offer);
@@ -428,7 +450,14 @@ function RouteComponent() {
       console.log({ inCall, inAudioCall });
 
       navigator?.mediaDevices
-        ?.getUserMedia({ video: false, audio: true })
+        ?.getUserMedia({
+          video: false,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        })
         .then((stream) => {
           localAudioStreamRef.current = stream;
           if (localAudioRef.current) localAudioRef.current.srcObject = stream;
@@ -450,7 +479,14 @@ function RouteComponent() {
       console.log("Getting user media!!");
 
       navigator?.mediaDevices
-        ?.getUserMedia({ video: false, audio: true })
+        ?.getUserMedia({
+          video: false,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        })
         .then((stream) => {
           localAudioStreamRef.current = stream;
           console.log(offer);
