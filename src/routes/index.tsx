@@ -657,7 +657,6 @@ function RouteComponent() {
                   ref={localVideoRef}
                   autoPlay
                   muted
-                  controls
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2 text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
@@ -670,7 +669,6 @@ function RouteComponent() {
                 <video
                   ref={remoteVideoRef}
                   autoPlay
-                  controls
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2 text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
@@ -748,18 +746,8 @@ function RouteComponent() {
                   <>
                     <p className="text-white">{`inAudioCall: ${inAudioCall}`}</p>
                     <p className="text-white">{`isReceivingAudioCall: ${isReceivingAudioCall}`}</p>
-                    <audio
-                      ref={localAudioRef}
-                      autoPlay
-                      controls
-                      playsInline
-                    ></audio>
-                    <audio
-                      ref={remoteAudioRef}
-                      autoPlay
-                      controls
-                      playsInline
-                    ></audio>
+                    <audio ref={localAudioRef} autoPlay muted></audio>
+                    <audio ref={remoteAudioRef} autoPlay></audio>
                     <Button
                       onClick={endAudioCall}
                       variant="destructive"
