@@ -82,7 +82,7 @@ function RouteComponent() {
   const datachannelRef = useRef<Record<string, RTCDataChannel | null>>({});
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
+  const localVideoStreamRef = useRef<MediaStream | null>(null);
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const localAudioStreamRef = useRef<MediaStream | null>(null);
@@ -183,9 +183,9 @@ function RouteComponent() {
           remoteVideoRef.current.srcObject = event.streams[0];
       };
 
-      localStreamRef.current
+      localVideoStreamRef.current
         ?.getTracks()
-        .forEach((track) => pc.addTrack(track, localStreamRef.current!));
+        .forEach((track) => pc.addTrack(track, localVideoStreamRef.current!));
     }
 
     return pc;
@@ -391,7 +391,7 @@ function RouteComponent() {
           },
         })
         .then((stream) => {
-          localStreamRef.current = stream;
+          localVideoStreamRef.current = stream;
           if (localVideoRef.current) localVideoRef.current.srcObject = stream;
           const pc = createCallPeerConnection(calleeId);
           callPeerRef.current = pc;
@@ -423,7 +423,7 @@ function RouteComponent() {
           },
         })
         .then((stream) => {
-          localStreamRef.current = stream;
+          localVideoStreamRef.current = stream;
           console.log(offer);
 
           if (localVideoRef.current) localVideoRef.current.srcObject = stream;
@@ -556,6 +556,15 @@ function RouteComponent() {
         setInAudioCall(false);
       }
     });
+    socketRef.current?.on("endVideoCall", () => {
+      if (callPeerRef.current) {
+        callPeerRef.current.close();
+        callPeerRef.current = null;
+        if (localVideoRef.current) localVideoRef.current.srcObject = null;
+        localVideoStreamRef.current!.getTracks().forEach((track) => track.stop());
+        setInAudioCall(false);
+      }
+    });
   }, [user, inAudioCall, inCall, accepted]);
 
   const handleCall = (toId: string) => {
@@ -583,8 +592,8 @@ function RouteComponent() {
       callPeerRef.current.close();
       callPeerRef.current = null;
       if (localVideoRef.current) localVideoRef.current.srcObject = null;
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
-      localStreamRef.current!.getTracks().forEach((track) => track.stop());
+      localVideoStreamRef.current!.getTracks().forEach((track) => track.stop());
+      socketRef.current!.emit("endVideoCall", { to: callerId || calleeId });
       setInCall(false);
       // stopScreenSharing();
     }
