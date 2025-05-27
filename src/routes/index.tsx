@@ -659,9 +659,6 @@ function RouteComponent() {
                   muted
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-2 left-2 text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
-                  You
-                </div>
               </CardContent>
             </Card>
             <Card className="rounded-2xl overflow-hidden shadow-xl bg-gray-900">
@@ -671,9 +668,6 @@ function RouteComponent() {
                   autoPlay
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-2 left-2 text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
-                  Remote
-                </div>
               </CardContent>
             </Card>
 
