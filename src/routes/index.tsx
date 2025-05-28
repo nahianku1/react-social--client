@@ -68,6 +68,7 @@ function RouteComponent() {
   const [id, setId] = useState<string>("");
   const [callerId, setCallerId] = useState<string>("");
   const [calleeId, setCalleeId] = useState<string>("");
+  const [callType, setCallType] = useState<string>("");
   const [offer, setOffer] = useState<RTCSessionDescriptionInit | null>(null);
   const [isReceivingCall, setIsReceivingCall] = useState(false);
   const [isReceivingAudioCall, setIsReceivingAudioCall] = useState(false);
@@ -85,6 +86,7 @@ function RouteComponent() {
   const localVideoStreamRef = useRef<MediaStream | null>(null);
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const ringtoneRef = useRef<HTMLAudioElement | null>(null);
   const localAudioStreamRef = useRef<MediaStream | null>(null);
   const navigate = useNavigate();
 
@@ -165,7 +167,7 @@ function RouteComponent() {
       }
     };
 
-    if (inAudioCall) {
+    if (callType === "audio") {
       pc.ontrack = (event) => {
         console.log("Remote Audio");
         console.log(event.streams[0]);
@@ -308,7 +310,7 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("https://react-social-server.onrender.com", {
+    socketRef.current = io("http://localhost:3000", {
       withCredentials: true,
     });
     return () => {
@@ -371,19 +373,21 @@ function RouteComponent() {
       }
     });
 
-    // Video Negotiation
+    // Call Negotiation
 
-    if (inCall) {
+    if (callType && !accepted) {
       console.log("Getting user media!!");
-      console.log({ inCall, inAudioCall });
 
       navigator?.mediaDevices
         ?.getUserMedia({
-          video: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
+          video:
+            callType === "video"
+              ? {
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true,
+                }
+              : false,
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
@@ -391,31 +395,40 @@ function RouteComponent() {
           },
         })
         .then((stream) => {
-          localVideoStreamRef.current = stream;
-          if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-          const pc = createCallPeerConnection(calleeId);
-          callPeerRef.current = pc;
-          pc.createOffer().then((offer) => {
-            pc.setLocalDescription(offer);
+          if (callType === "video") {
+            localVideoStreamRef.current = stream;
+            if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+          } else {
+            localAudioStreamRef.current = stream;
+            if (localAudioRef.current) localAudioRef.current.srcObject = stream;
+          }
+          callPeerRef.current = createCallPeerConnection(calleeId);
+          callPeerRef.current.createOffer().then((offer) => {
+            callPeerRef.current!.setLocalDescription(offer);
             socketRef.current?.emit("call", {
               to: calleeId,
               offer,
+              cType: callType,
             });
           });
         })
         .catch((err) => console.error("Error accessing media devices:", err));
     }
 
-    if (inCall && accepted) {
+    if (callType && accepted) {
       console.log("Getting user media!!");
+      console.log({ callType });
 
       navigator?.mediaDevices
         ?.getUserMedia({
-          video: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
+          video:
+            callType === "video"
+              ? {
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true,
+                }
+              : false,
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
@@ -423,10 +436,13 @@ function RouteComponent() {
           },
         })
         .then((stream) => {
-          localVideoStreamRef.current = stream;
-          console.log(offer);
-
-          if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+          if (callType === "video") {
+            localVideoStreamRef.current = stream;
+            if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+          } else {
+            localAudioStreamRef.current = stream;
+            if (localAudioRef.current) localAudioRef.current.srcObject = stream;
+          }
           const pc = createCallPeerConnection(callerId);
           callPeerRef.current = pc;
           pc.setRemoteDescription(offer!);
@@ -435,97 +451,43 @@ function RouteComponent() {
             socketRef.current?.emit("callAnswered", {
               to: callerId,
               answer,
+              cType: callType,
             });
-            setIsReceivingCall(false);
-            setInCall(true);
+            if (callType === "video") {
+              setIsReceivingCall(false);
+              setInCall(true);
+            } else {
+              setIsReceivingAudioCall(false);
+              setInAudioCall(true);
+            }
           });
         })
         .catch((err) => console.error("Error accessing media devices:", err));
     }
 
-    // Audio Negotiation
-
-    if (inAudioCall && !accepted) {
-      console.log("Getting user media!!");
-      console.log({ inCall, inAudioCall });
-
-      navigator?.mediaDevices
-        ?.getUserMedia({
-          video: false,
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        })
-        .then((stream) => {
-          localAudioStreamRef.current = stream;
-          if (localAudioRef.current) localAudioRef.current.srcObject = stream;
-          const pc = createCallPeerConnection(calleeId);
-          callPeerRef.current = pc;
-          pc.createOffer().then((offer) => {
-            pc.setLocalDescription(offer);
-            socketRef.current?.emit("call", {
-              to: calleeId,
-              offer,
-              audioCall: inAudioCall,
-            });
-          });
-        })
-        .catch((err) => console.error("Error accessing media devices:", err));
-    }
-
-    if (inAudioCall && accepted) {
-      console.log("Getting user media!!");
-
-      navigator?.mediaDevices
-        ?.getUserMedia({
-          video: false,
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        })
-        .then((stream) => {
-          localAudioStreamRef.current = stream;
-          console.log(offer);
-
-          if (localAudioRef.current) localAudioRef.current.srcObject = stream;
-          const pc = createCallPeerConnection(callerId);
-          callPeerRef.current = pc;
-          pc.setRemoteDescription(offer!);
-          callPeerRef.current?.createAnswer().then((answer) => {
-            callPeerRef.current?.setLocalDescription(answer);
-            socketRef.current?.emit("callAnswered", {
-              to: callerId,
-              answer,
-              audioCall: inAudioCall,
-            });
-            setIsReceivingAudioCall(false);
-            setInAudioCall(true);
-          });
-        })
-        .catch((err) => console.error("Error accessing media devices:", err));
-    }
-
-    socketRef.current!.on("incomingCall", ({ from, offer, audioCall }) => {
-      console.log("incomingCall");
-      console.log(audioCall);
+    socketRef.current!.on("incomingCall", ({ from, offer, cType }) => {
+      console.log(cType);
       setCallerId(from);
       setOffer(offer);
-      if (audioCall) {
-        setInAudioCall(true);
+      setCallType(cType);
+      const ringtone = new Audio("/messenger_video_call.mp3");
+      ringtone.loop = true;
+      ringtone.play().catch((e) => {
+        console.warn("Ringtone play failed:", e);
+      });
+
+      ringtoneRef.current = ringtone;
+      ringtone.volume = 1.0;
+      if (cType === "audio") {
         setIsReceivingAudioCall(true);
       } else {
         setIsReceivingCall(true);
       }
     });
 
-    socketRef.current!.on("callAnswered", async ({ answer, audioCall }) => {
-      console.log({ answer });
+    socketRef.current!.on("callAnswered", async ({ answer, cType }) => {
+      console.log({ answer, cType });
 
-      console.log(inAudioCall);
       if (callPeerRef.current) {
         if (callPeerRef.current.signalingState === "have-local-offer") {
           await callPeerRef.current.setRemoteDescription(answer);
@@ -535,7 +497,13 @@ function RouteComponent() {
           );
         }
       }
-      audioCall ? setInAudioCall(true) : setInCall(true);
+      if (cType === "video") {
+        setInAudioCall(false);
+        setInCall(true);
+      } else {
+        setInCall(false);
+        setInAudioCall(true);
+      }
     });
 
     socketRef.current!.on("iceCandidate", ({ candidate }) => {
@@ -544,76 +512,47 @@ function RouteComponent() {
         callPeerRef.current.addIceCandidate(candidate);
       }
     });
+  }, [user, callType, accepted]);
 
-    socketRef.current?.on("endAudioCall", () => {
-      if (callPeerRef.current) {
-        callPeerRef.current.close();
-        callPeerRef.current = null;
-        if (localAudioRef.current) localAudioRef.current.srcObject = null;
-        localAudioStreamRef
-          .current!.getTracks()
-          .forEach((track) => track.stop());
-        setInAudioCall(false);
+  const handleCall = (toId: string, cType: string) => {
+    if (cType === "video") {
+      setCalleeId(toId);
+      setCallType(cType);
+      setInCall(true);
+    } else {
+      setCalleeId(toId);
+      setCallType(cType);
+      setInAudioCall(true);
+    }
+  };
+
+  const acceptCall = (cType: string) => {
+    console.log(cType);
+    if (cType === "video") {
+      setAccepted(true);
+      setInCall(true);
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+        ringtoneRef.current = null;
       }
-    });
-    socketRef.current?.on("endVideoCall", () => {
-      if (callPeerRef.current) {
-        callPeerRef.current.close();
-        callPeerRef.current = null;
-        if (localVideoRef.current) localVideoRef.current.srcObject = null;
-        localVideoStreamRef.current!.getTracks().forEach((track) => track.stop());
-        setInAudioCall(false);
+    } else {
+      setAccepted(true);
+      setInAudioCall(true);
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+        ringtoneRef.current = null;
       }
-    });
-  }, [user, inAudioCall, inCall, accepted]);
-
-  const handleCall = (toId: string) => {
-    setInCall(true);
-    setCalleeId(toId);
-  };
-
-  const handleAudioCall = (toId: string) => {
-    console.log(toId);
-    setCalleeId(toId);
-    setInAudioCall(true);
-  };
-
-  const acceptCall = () => {
-    setAccepted(true);
-    setInCall(true);
-  };
-  const acceptAudioCall = () => {
-    setAccepted(true);
-    setInAudioCall(true);
+    }
   };
 
   const endCall = () => {
-    if (callPeerRef.current) {
-      callPeerRef.current.close();
-      callPeerRef.current = null;
-      if (localVideoRef.current) localVideoRef.current.srcObject = null;
-      localVideoStreamRef.current!.getTracks().forEach((track) => track.stop());
-      socketRef.current!.emit("endVideoCall", { to: callerId || calleeId });
-      setInCall(false);
-      // stopScreenSharing();
-    }
-  };
-
-  const endAudioCall = () => {
-    if (callPeerRef.current) {
-      callPeerRef.current.close();
-      callPeerRef.current = null;
-      if (localAudioRef.current) localAudioRef.current.srcObject = null;
-      localAudioStreamRef.current!.getTracks().forEach((track) => track.stop());
-      socketRef.current!.emit("endAudioCall", { to: callerId || calleeId });
-      setInAudioCall(false);
-      // stopScreenSharing();
-    }
+    window.location.reload();
   };
 
   useEffect(() => {
     const self = onlineusers.find((item) => item.email === user?.email);
-
     if (self) {
       setId(self.id);
     }
@@ -629,20 +568,32 @@ function RouteComponent() {
                 <Avatar className="w-24 h-24">
                   <AvatarImage src="https://i.pravatar.cc/300" />
                   <AvatarFallback className="text-xl">
-                    <span className="text-2xl font-bold">Ankit</span>
+                    <span className="text-2xl font-bold">
+                      {callerId
+                        ? onlineusers.find((it) => it.id === callerId)?.name
+                        : "Ankit"}
+                    </span>
                   </AvatarFallback>
                 </Avatar>
-                <h2 className="text-2xl font-semibold">{"Ankit"}</h2>
+                <h2 className="text-2xl font-semibold">
+                  {callerId
+                    ? onlineusers.find((it) => it.id === callerId)?.name
+                    : "Ankit"}
+                </h2>
                 <p className="text-sm text-zinc-400">is calling you...</p>
                 <div className="flex gap-4 mt-6">
                   <Button
-                    onClick={acceptCall}
+                    onClick={() => acceptCall("video")}
                     className="bg-green-500 hover:bg-green-600 text-white shadow-md"
                   >
                     <PhoneIncoming className="mr-2 h-4 w-4" />
                     Accept
                   </Button>
-                  <Button variant="destructive" className="shadow-md">
+                  <Button
+                    onClick={endCall}
+                    variant="destructive"
+                    className="shadow-md"
+                  >
                     <PhoneOff className="mr-2 h-4 w-4" />
                     Decline
                   </Button>
@@ -691,7 +642,7 @@ function RouteComponent() {
           </motion.div>
         </div>
       )}
-      {inAudioCall && isReceivingAudioCall && (
+      {isReceivingAudioCall && (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-900 to-black text-white">
           <div className="backdrop-blur-md bg-white/5 p-6 rounded-2xl shadow-2xl max-w-sm w-full">
             <Card className="bg-transparent border border-white/10 shadow-none">
@@ -699,24 +650,30 @@ function RouteComponent() {
                 <Avatar className="w-24 h-24">
                   <AvatarImage src="https://i.pravatar.cc/300" />
                   <AvatarFallback className="text-xl">
-                    <span className="text-2xl font-bold">Ankit</span>
+                    <span className="text-2xl font-bold">
+                      {callerId
+                        ? onlineusers.find((it) => it.id === callerId)?.name
+                        : "Ankit"}
+                    </span>
                   </AvatarFallback>
                 </Avatar>
-                <h2 className="text-2xl font-semibold">{"Ankit"}</h2>
+                <h2 className="text-2xl font-semibold">
+                  {callerId
+                    ? onlineusers.find((it) => it.id === callerId)?.name
+                    : "Ankit"}
+                </h2>
                 <p className="text-sm text-zinc-400">is calling you...</p>
 
-                <p className="text-white">{`inAudioCall: ${inAudioCall}`}</p>
-                <p className="text-white">{`isReceivingAudioCall: ${isReceivingAudioCall}`}</p>
                 <div className="flex gap-4 mt-6">
                   <Button
-                    onClick={acceptAudioCall}
+                    onClick={() => acceptCall("audio")}
                     className="bg-green-500 hover:bg-green-600 text-white shadow-md"
                   >
                     <PhoneIncoming className="mr-2 h-4 w-4" />
                     Accept
                   </Button>
                   <Button
-                    onClick={endAudioCall}
+                    onClick={endCall}
                     variant="destructive"
                     className="shadow-md"
                   >
@@ -729,7 +686,7 @@ function RouteComponent() {
           </div>
         </div>
       )}
-      {inAudioCall && !isReceivingAudioCall && (
+      {inAudioCall && (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-900 to-black text-white">
           <div className="backdrop-blur-md bg-white/5 p-6 rounded-2xl shadow-2xl max-w-sm w-full">
             <Card className="bg-transparent border border-white/10 shadow-none">
@@ -749,10 +706,10 @@ function RouteComponent() {
                   <>
                     <p className="text-white">{`inAudioCall: ${inAudioCall}`}</p>
                     <p className="text-white">{`isReceivingAudioCall: ${isReceivingAudioCall}`}</p>
-                    <audio ref={localAudioRef} autoPlay muted></audio>
-                    <audio ref={remoteAudioRef} autoPlay></audio>
+                    <audio ref={localAudioRef} controls autoPlay muted></audio>
+                    <audio ref={remoteAudioRef} controls autoPlay></audio>
                     <Button
-                      onClick={endAudioCall}
+                      onClick={endCall}
                       variant="destructive"
                       className="shadow-md"
                     >
@@ -819,14 +776,14 @@ function RouteComponent() {
                   </div>
                   <div className="flex  gap-2">
                     <Button
-                      onClick={() => handleCall(user?.id)}
+                      onClick={() => handleCall(user?.id, "video")}
                       disabled={user.id === id}
                       className="w-8 h-8 cursor-pointer"
                     >
                       <VideoIcon />
                     </Button>
                     <Button
-                      onClick={() => handleAudioCall(user?.id)}
+                      onClick={() => handleCall(user?.id, "audio")}
                       disabled={user.id === id}
                       className="w-8 h-8 cursor-pointer"
                     >
@@ -883,14 +840,14 @@ function RouteComponent() {
                       </div>
                       <div className="flex  gap-2">
                         <Button
-                          onClick={() => handleCall(user?.id)}
+                          onClick={() => handleCall(user?.id, "video")}
                           disabled={user.id === id}
                           className="w-8 h-8 cursor-pointer"
                         >
                           <VideoIcon />
                         </Button>
                         <Button
-                          onClick={() => handleAudioCall(user?.id)}
+                          onClick={() => handleCall(user?.id, "audio")}
                           disabled={user.id === id}
                           className="w-8 h-8 cursor-pointer"
                         >
