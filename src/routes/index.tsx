@@ -62,7 +62,7 @@ const iceServers = [
 
 function RouteComponent() {
   const [messages, setMessages] = useState<message[] | []>([]);
-  const [inCall, setInCall] = useState<boolean>(false);
+  const [inVideoCall, setInVideoCall] = useState<boolean>(false);
   const [accepted, setAccepted] = useState<boolean>(false);
   const [inAudioCall, setInAudioCall] = useState<boolean>(false);
   const [id, setId] = useState<string>("");
@@ -311,7 +311,7 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("https://react-social-server.onrender.com", {
+    socketRef.current = io("http://localhost:3000", {
       withCredentials: true,
     });
     return () => {
@@ -456,7 +456,7 @@ function RouteComponent() {
             });
             if (callType === "video") {
               setIsReceivingCall(false);
-              setInCall(true);
+              setInVideoCall(true);
             } else {
               setIsReceivingAudioCall(false);
               setInAudioCall(true);
@@ -475,9 +475,9 @@ function RouteComponent() {
         setCallType(cType);
         const ringtone = new Audio("/messenger_video_call.mp3");
         ringtoneRef.current = ringtone;
+        ringtone.play();
         ringtone.volume = 1.0;
         ringtone.loop = true;
-        ringtone.play()
         if (cType === "audio") {
           setIsReceivingAudioCall(true);
         } else {
@@ -500,9 +500,9 @@ function RouteComponent() {
       }
       if (cType === "video") {
         setInAudioCall(false);
-        setInCall(true);
+        setInVideoCall(true);
       } else {
-        setInCall(false);
+        setInVideoCall(false);
         setInAudioCall(true);
       }
     });
@@ -519,7 +519,7 @@ function RouteComponent() {
     if (cType === "video") {
       setCalleeId(toId);
       setCallType(cType);
-      setInCall(true);
+      setInVideoCall(true);
     } else {
       setCalleeId(toId);
       setCallType(cType);
@@ -531,7 +531,7 @@ function RouteComponent() {
     console.log(cType);
     if (cType === "video") {
       setAccepted(true);
-      setInCall(true);
+      setInVideoCall(true);
       if (ringtoneRef.current) {
         ringtoneRef.current.pause();
         ringtoneRef.current.currentTime = 0;
@@ -602,7 +602,7 @@ function RouteComponent() {
           </div>
         </div>
       )}
-      {inCall && (
+      {inVideoCall && (
         <div className="flex items-center justify-center min-h-screen bg-gray-950 text-white">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -616,7 +616,7 @@ function RouteComponent() {
                   ref={localVideoRef}
                   autoPlay
                   muted
-                  className="w-full h-full object-cover"
+                  className=" w-full h-full object-cover"
                 />
               </CardContent>
             </Card>
@@ -724,176 +724,165 @@ function RouteComponent() {
           </div>
         </div>
       )}
-      {!inCall && !inAudioCall && !isReceivingAudioCall && !isReceivingCall && (
-        <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 text-white flex flex-col">
-          {/* Top Bar */}
-          <div className="flex justify-between items-center px-6 py-4 bg-white/10 backdrop-blur-md shadow-md">
-            <h1 className="text-xl ml-8 font-semibold">Chat App</h1>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer border-2 border-white">
-                  <AvatarImage src="https://i.pravatar.cc/300" alt="User" />
-                  <AvatarFallback>U</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="mt-2 w-40">
-                <DropdownMenuItem className="cursor-pointer">
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-red-600 cursor-pointer"
-                >
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="flex flex-1 overflow-hidden">
-            {/* Sidebar - Online Users (Desktop) */}
-            <div className="hidden sm:block w-64 bg-white/10 backdrop-blur-md p-4 space-y-2 overflow-y-auto">
-              <h2 className="text-lg font-semibold mb-2">Online Users</h2>
-              <hr className="" />
-              {onlineusers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
-                >
-                  <div className="flex justify-start gap-2">
-                    <div className="relative w-8 h-8 ">
-                      <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
-                      <Avatar className="w-full h-full absolute">
-                        <AvatarImage
-                          src="https://i.pravatar.cc/300"
-                          alt="User"
-                        />
-                      </Avatar>
-                    </div>
-                    <span>{user?.name}</span>
-                  </div>
-                  <div className="flex  gap-2">
-                    <Button
-                      onClick={() => handleCall(user?.id, "video")}
-                      disabled={user.id === id}
-                      className="w-8 h-8 cursor-pointer"
-                    >
-                      <VideoIcon />
-                    </Button>
-                    <Button
-                      onClick={() => handleCall(user?.id, "audio")}
-                      disabled={user.id === id}
-                      className="w-8 h-8 cursor-pointer"
-                    >
-                      <PhoneCall />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Sheet for Online Users (Mobile) */}
-            <div className="sm:hidden  absolute left-2 top-2 z-30">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button
-                    size="icon"
-                    className="bg-white/20 text-white hover:bg-white/30"
+      {!inVideoCall &&
+        !inAudioCall &&
+        !isReceivingAudioCall &&
+        !isReceivingCall && (
+          <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 text-white flex flex-col">
+            {/* Top Bar */}
+            <div className="flex justify-between items-center px-6 py-4 bg-white/10 backdrop-blur-md shadow-md">
+              <h1 className="text-xl ml-8 font-semibold">Chat App</h1>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="cursor-pointer border-2 border-white">
+                    <AvatarImage src="https://i.pravatar.cc/300" alt="User" />
+                    <AvatarFallback>U</AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="mt-2 w-40">
+                  <DropdownMenuItem className="cursor-pointer">
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-600 cursor-pointer"
                   >
-                    <span className="sr-only">Open Online Users</span>
-                    <svg
-                      width="24"
-                      height="24"
-                      fill="white"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side="left"
-                  className="w-64 bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 backdrop-blur-md p-4 space-y-2"
-                >
-                  <h2 className="text-lg font-semibold mb-2">Online Users</h2>
-                  <hr />
-                  {onlineusers.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
-                    >
-                      <div className="flex justify-start gap-2">
-                        <div className="relative w-8 h-8 ">
-                          <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
-                          <Avatar className="w-full h-full absolute">
-                            <AvatarImage
-                              src="https://i.pravatar.cc/300"
-                              alt="User"
-                            />
-                          </Avatar>
-                        </div>
-                        <span>{user?.name}</span>
-                      </div>
-                      <div className="flex  gap-2">
-                        <Button
-                          onClick={() => handleCall(user?.id, "video")}
-                          disabled={user.id === id}
-                          className="w-8 h-8 cursor-pointer"
-                        >
-                          <VideoIcon />
-                        </Button>
-                        <Button
-                          onClick={() => handleCall(user?.id, "audio")}
-                          disabled={user.id === id}
-                          className="w-8 h-8 cursor-pointer"
-                        >
-                          <PhoneCall />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </SheetContent>
-              </Sheet>
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            {/* Chat Section */}
-            <div className="flex-1 relative flex flex-col bg-white overflow-hidden min-h-0">
-              {/* Message List */}
-              <ScrollArea className="flex-1 p-4 min-h-0">
-                <div className="flex flex-col gap-3">
-                  {messages.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`max-w-xs sm:max-w-sm p-3 rounded-lg ${
-                        msg.email === user?.email
-                          ? "self-end bg-purple-100 text-purple-900"
-                          : "self-start bg-gray-200 text-gray-900"
-                      }`}
+            <div className="flex flex-1 overflow-hidden">
+              {/* Sidebar - Online Users (Desktop) */}
+              <div className="hidden sm:block w-64 bg-white/10 backdrop-blur-md p-4 space-y-2 overflow-y-auto">
+                <h2 className="text-lg font-semibold mb-2">Online Users</h2>
+                <hr className="" />
+                {onlineusers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
+                  >
+                    <div className="flex justify-start gap-2">
+                      <div className="relative w-8 h-8 ">
+                        <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
+                        <Avatar className="w-full h-full absolute">
+                          <AvatarImage
+                            src="https://i.pravatar.cc/300"
+                            alt="User"
+                          />
+                        </Avatar>
+                      </div>
+                      <span>{user?.name}</span>
+                    </div>
+                    <div className="flex  gap-2">
+                      <Button
+                        onClick={() => handleCall(user?.id, "video")}
+                        disabled={user.id === id}
+                        className="w-8 h-8 cursor-pointer"
+                      >
+                        <VideoIcon />
+                      </Button>
+                      <Button
+                        onClick={() => handleCall(user?.id, "audio")}
+                        disabled={user.id === id}
+                        className="w-8 h-8 cursor-pointer"
+                      >
+                        <PhoneCall />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Sheet for Online Users (Mobile) */}
+              <div className="sm:hidden  absolute left-2 top-2 z-30">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button
+                      size="icon"
+                      className="bg-white/20 text-white hover:bg-white/30"
                     >
-                      <span className="block text-sm mb-1 font-medium">
-                        {msg.name}:
-                      </span>
-                      <p>
-                        {msg.isFile && !msg?.meta?.type.includes("image") ? (
-                          <a
-                            className="underline"
-                            href={msg.content}
-                            download={msg.fileName}
+                      <span className="sr-only">Open Online Users</span>
+                      <svg
+                        width="24"
+                        height="24"
+                        fill="white"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent
+                    side="left"
+                    className="w-64 bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 backdrop-blur-md p-4 space-y-2"
+                  >
+                    <h2 className="text-lg font-semibold mb-2">Online Users</h2>
+                    <hr />
+                    {onlineusers.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
+                      >
+                        <div className="flex justify-start gap-2">
+                          <div className="relative w-8 h-8 ">
+                            <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
+                            <Avatar className="w-full h-full absolute">
+                              <AvatarImage
+                                src="https://i.pravatar.cc/300"
+                                alt="User"
+                              />
+                            </Avatar>
+                          </div>
+                          <span>{user?.name}</span>
+                        </div>
+                        <div className="flex  gap-2">
+                          <Button
+                            onClick={() => handleCall(user?.id, "video")}
+                            disabled={user.id === id}
+                            className="w-8 h-8 cursor-pointer"
                           >
-                            {msg.fileName}
-                          </a>
-                        ) : msg.isFile && msg?.meta?.type.includes("image") ? (
-                          <>
-                            <img
-                              className="w-[200px] mb-1 h-[120px]"
-                              src={msg?.content}
-                              alt=""
-                            />
+                            <VideoIcon />
+                          </Button>
+                          <Button
+                            onClick={() => handleCall(user?.id, "audio")}
+                            disabled={user.id === id}
+                            className="w-8 h-8 cursor-pointer"
+                          >
+                            <PhoneCall />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </SheetContent>
+                </Sheet>
+              </div>
+
+              {/* Chat Section */}
+              <div className="flex-1 relative flex flex-col bg-white overflow-hidden min-h-0">
+                {/* Message List */}
+                <ScrollArea className="flex-1 p-4 min-h-0">
+                  <div className="flex flex-col gap-3">
+                    {messages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={`max-w-xs sm:max-w-sm p-3 rounded-lg ${
+                          msg.email === user?.email
+                            ? "self-end bg-purple-100 text-purple-900"
+                            : "self-start bg-gray-200 text-gray-900"
+                        }`}
+                      >
+                        <span className="block text-sm mb-1 font-medium">
+                          {msg.name}:
+                        </span>
+                        <p>
+                          {msg.isFile && !msg?.meta?.type.includes("image") ? (
                             <a
                               className="underline"
                               href={msg.content}
@@ -901,51 +890,66 @@ function RouteComponent() {
                             >
                               {msg.fileName}
                             </a>
-                          </>
-                        ) : (
-                          msg.content
-                        )}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
+                          ) : msg.isFile &&
+                            msg?.meta?.type.includes("image") ? (
+                            <>
+                              <img
+                                className="w-[200px] mb-1 h-[120px]"
+                                src={msg?.content}
+                                alt=""
+                              />
+                              <a
+                                className="underline"
+                                href={msg.content}
+                                download={msg.fileName}
+                              >
+                                {msg.fileName}
+                              </a>
+                            </>
+                          ) : (
+                            msg.content
+                          )}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
 
-              {/* Chat Input at Bottom */}
-              <form onSubmit={handleSubmit}>
-                <div className="p-4 border-t bg-white flex items-center gap-2">
-                  <Input
-                    placeholder="Type a message..."
-                    className="bg-gray-100 text-black placeholder:text-gray-500"
-                  />
-                  <div>
+                {/* Chat Input at Bottom */}
+                <form onSubmit={handleSubmit}>
+                  <div className="p-4 border-t bg-white flex items-center gap-2">
                     <Input
-                      type="file"
-                      hidden
-                      ref={fileInputRef}
-                      onChange={sendFile}
+                      placeholder="Type a message..."
                       className="bg-gray-100 text-black placeholder:text-gray-500"
                     />
+                    <div>
+                      <Input
+                        type="file"
+                        hidden
+                        ref={fileInputRef}
+                        onChange={sendFile}
+                        className="bg-gray-100 text-black placeholder:text-gray-500"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="bg-purple-600 text-white hover:bg-purple-700"
+                      >
+                        <FileArchive />
+                      </Button>
+                    </div>
                     <Button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
+                      type="submit"
                       className="bg-purple-600 text-white hover:bg-purple-700"
                     >
-                      <FileArchive />
+                      Send
                     </Button>
                   </div>
-                  <Button
-                    type="submit"
-                    className="bg-purple-600 text-white hover:bg-purple-700"
-                  >
-                    Send
-                  </Button>
-                </div>
-              </form>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </>
   );
 }
