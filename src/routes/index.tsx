@@ -824,7 +824,7 @@ function RouteComponent() {
                   className="w-64 bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 backdrop-blur-md p-4 space-y-2"
                 >
                   <h2 className="text-lg font-semibold mb-2">Online Users</h2>
-                  <p>{id}</p>
+                  <hr />
                   {onlineusers.map((user) => (
                     <div
                       key={user.id}
