@@ -625,6 +625,14 @@ function RouteComponent() {
     }
   };
 
+  const swapVideos = () => {
+    const temp = localVideoRef.current?.srcObject;
+    if (localVideoRef.current)
+      localVideoRef.current.srcObject =
+        remoteVideoRef.current?.srcObject || null;
+    if (remoteVideoRef.current) remoteVideoRef.current!.srcObject = temp!;
+  };
+
   return (
     <>
       {isReceivingCall && (
@@ -688,6 +696,7 @@ function RouteComponent() {
                   ref={remoteVideoRef}
                   autoPlay
                   className="w-full h-full object-cover"
+                  onClick={swapVideos}
                 />
               </div>
             </div>
@@ -696,27 +705,31 @@ function RouteComponent() {
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-auto flex justify-center gap-4 z-20">
               <Button
                 onClick={endCall}
-                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-red-600 w-8 h-8 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                <Phone size={32}/>
+                <Phone size={48} />
               </Button>
               <Button
                 onClick={() => toggleMute("video")}
-                className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-gray-700 w-8 h-8 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                {isMuted ? <Mic size={32}/> : <MicOff size={32}/>}
+                {isMuted ? <Mic size={48} /> : <MicOff size={48} />}
               </Button>
               <Button
                 onClick={() => toggleCamera("video")}
-                className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-gray-700 w-8 h-8 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                {isCameraOff ? <CameraIcon size={32}/> : <CameraOffIcon size={32}/>}
+                {isCameraOff ? (
+                  <CameraIcon size={48} />
+                ) : (
+                  <CameraOffIcon size={48} />
+                )}
               </Button>
               <Button
                 onClick={switchCamera}
-                className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-gray-700 w-8 h-8 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                <RefreshCcw size={32}/>
+                <RefreshCcw size={48} />
               </Button>
             </div>
           </div>
