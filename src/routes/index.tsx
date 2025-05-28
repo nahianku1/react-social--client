@@ -587,34 +587,34 @@ function RouteComponent() {
     try {
       const newFacingMode = facingMode === "user" ? "environment" : "user";
 
-      // Stop all current video tracks
+      // Stop current video tracks
       localVideoStreamRef.current
-        ?.getTracks()
-        .forEach((track) => track.kind === "video" && track.stop());
+        ?.getVideoTracks()
+        .forEach((track) => track.stop());
 
-      // Get new stream with new facingMode
+      // Get new stream from the opposite camera
       const newStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { exact: newFacingMode } },
-        audio: true,
+        audio: true, // keep audio, or set to false if not needed
       });
 
-      // Replace the stream in the video element
+      const newVideoTrack = newStream.getVideoTracks()[0];
 
+      // Replace local video element
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = newStream;
       }
 
-      // Replace the video track in the peer connection if needed
-      // (Assuming you have a variable `peerConnection`)
-      const videoTrack = newStream.getTracks()[1];
+      // Replace the video track in the peer connection
       const sender = callPeerRef
         .current!.getSenders()
         .find((s) => s.track?.kind === "video");
+
       if (sender) {
-        sender.replaceTrack(videoTrack);
+        await sender.replaceTrack(newVideoTrack);
       }
 
-      // Update refs and state
+      // Update state and refs
       localVideoStreamRef.current = newStream;
       setFacingMode(newFacingMode);
     } catch (err) {
