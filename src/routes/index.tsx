@@ -850,48 +850,50 @@ function RouteComponent() {
 
             <div className="flex flex-1 overflow-hidden">
               {/* Sidebar - Online Users (Desktop) */}
-              <div className="hidden sm:block w-64 bg-white/10 backdrop-blur-md p-4 space-y-2 overflow-y-auto">
+              <div className="hidden sm:block w-64 p-3 space-y-2 overflow-y-auto h-full max-h-screen">
                 <h2 className="text-lg font-semibold mb-2">Online Users</h2>
                 <hr className="" />
-                {onlineusers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
-                  >
-                    <div className="flex justify-start gap-2">
-                      <div className="relative w-8 h-8 ">
-                        <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
-                        <Avatar className="w-full h-full absolute">
-                          <AvatarImage
-                            src="https://i.pravatar.cc/300"
-                            alt="User"
-                          />
-                        </Avatar>
+                <div className="space-y-2">
+                  {onlineusers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
+                    >
+                      <div className="flex justify-start gap-2">
+                        <div className="relative w-8 h-8 ">
+                          <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
+                          <Avatar className="w-full h-full absolute">
+                            <AvatarImage
+                              src="https://i.pravatar.cc/300"
+                              alt="User"
+                            />
+                          </Avatar>
+                        </div>
+                        <span>{user?.name}</span>
                       </div>
-                      <span>{user?.name}</span>
+                      <div className="flex  gap-2">
+                        <Button
+                          onClick={() => handleCall(user?.id, "video")}
+                          disabled={user.id === id}
+                          className="w-10 h-10 cursor-pointer"
+                        >
+                          <VideoIcon />
+                        </Button>
+                        <Button
+                          onClick={() => handleCall(user?.id, "audio")}
+                          disabled={user.id === id}
+                          className="w-10 h-10 cursor-pointer"
+                        >
+                          <PhoneCall />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex  gap-2">
-                      <Button
-                        onClick={() => handleCall(user?.id, "video")}
-                        disabled={user.id === id}
-                        className="w-8 h-8 cursor-pointer"
-                      >
-                        <VideoIcon />
-                      </Button>
-                      <Button
-                        onClick={() => handleCall(user?.id, "audio")}
-                        disabled={user.id === id}
-                        className="w-8 h-8 cursor-pointer"
-                      >
-                        <PhoneCall />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
               {/* Sheet for Online Users (Mobile) */}
-              <div className="sm:hidden  absolute left-2 top-2 z-30">
+              <div className="sm:hidden absolute left-2 top-2 z-30">
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button
@@ -914,44 +916,47 @@ function RouteComponent() {
                   <SheetContent
                     side="left"
                     className="w-64 bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 backdrop-blur-md p-4 space-y-2"
+                    style={{ maxHeight: "100vh", overflowY: "auto" }}
                   >
                     <h2 className="text-lg font-semibold mb-2">Online Users</h2>
                     <hr />
-                    {onlineusers.map((user) => (
-                      <div
-                        key={user.id}
-                        className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
-                      >
-                        <div className="flex justify-start gap-2">
-                          <div className="relative w-8 h-8 ">
-                            <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
-                            <Avatar className="w-full h-full absolute">
-                              <AvatarImage
-                                src="https://i.pravatar.cc/300"
-                                alt="User"
-                              />
-                            </Avatar>
+                    <div className="space-y-2">
+                      {onlineusers.map((user) => (
+                        <div
+                          key={user.id}
+                          className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
+                        >
+                          <div className="flex justify-start gap-2">
+                            <div className="relative w-8 h-8 ">
+                              <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
+                              <Avatar className="w-full h-full absolute">
+                                <AvatarImage
+                                  src="https://i.pravatar.cc/300"
+                                  alt="User"
+                                />
+                              </Avatar>
+                            </div>
+                            <span>{user?.name}</span>
                           </div>
-                          <span>{user?.name}</span>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleCall(user?.id, "video")}
+                              disabled={user.id === id}
+                              className="w-8 h-8 cursor-pointer"
+                            >
+                              <VideoIcon />
+                            </Button>
+                            <Button
+                              onClick={() => handleCall(user?.id, "audio")}
+                              disabled={user.id === id}
+                              className="w-8 h-8 cursor-pointer"
+                            >
+                              <PhoneCall />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex  gap-2">
-                          <Button
-                            onClick={() => handleCall(user?.id, "video")}
-                            disabled={user.id === id}
-                            className="w-8 h-8 cursor-pointer"
-                          >
-                            <VideoIcon />
-                          </Button>
-                          <Button
-                            onClick={() => handleCall(user?.id, "audio")}
-                            disabled={user.id === id}
-                            className="w-8 h-8 cursor-pointer"
-                          >
-                            <PhoneCall />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </SheetContent>
                 </Sheet>
               </div>
@@ -1008,36 +1013,39 @@ function RouteComponent() {
                 </ScrollArea>
 
                 {/* Chat Input at Bottom */}
-                <form onSubmit={handleSubmit}>
-                  <div className="p-4 border-t bg-white flex items-center gap-2">
-                    <Input
-                      placeholder="Type a message..."
-                      className="bg-gray-100 text-black placeholder:text-gray-500"
-                    />
-                    <div>
+                {/* Overlay Chat Input Form */}
+                <div className="absolute bottom-0 left-0 w-full z-20">
+                  <form onSubmit={handleSubmit}>
+                    <div className="p-4 border-t bg-white flex items-center gap-2">
                       <Input
-                        type="file"
-                        hidden
-                        ref={fileInputRef}
-                        onChange={sendFile}
+                        placeholder="Type a message..."
                         className="bg-gray-100 text-black placeholder:text-gray-500"
                       />
+                      <div>
+                        <Input
+                          type="file"
+                          hidden
+                          ref={fileInputRef}
+                          onChange={sendFile}
+                          className="bg-gray-100 text-black placeholder:text-gray-500"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="bg-purple-600 text-white hover:bg-purple-700"
+                        >
+                          <FileArchive />
+                        </Button>
+                      </div>
                       <Button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
+                        type="submit"
                         className="bg-purple-600 text-white hover:bg-purple-700"
                       >
-                        <FileArchive />
+                        Send
                       </Button>
                     </div>
-                    <Button
-                      type="submit"
-                      className="bg-purple-600 text-white hover:bg-purple-700"
-                    >
-                      Send
-                    </Button>
-                  </div>
-                </form>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
