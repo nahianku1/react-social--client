@@ -15,10 +15,14 @@ import { useEffect, useRef, useState } from "react";
 import { isAuthenticated } from "@/utils/isAuthenticated";
 import { io, Socket } from "socket.io-client";
 import {
+  CameraOffIcon,
   FileArchive,
+  MicOff,
+  Phone,
   PhoneCall,
   PhoneIncoming,
   PhoneOff,
+  ToggleLeftIcon,
   VideoIcon,
 } from "lucide-react";
 
@@ -604,64 +608,69 @@ function RouteComponent() {
       )}
       {inVideoCall && (
         <div className="flex items-center justify-center min-h-screen text-white">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-6xl"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-6xl">
             {/* Local video as fullscreen background */}
-            <div className="relative col-span-1 md:col-span-2 w-full h-screen">
+            <div className="fixed inset-0 w-screen h-screen z-10 overflow-hidden">
               <video
-              ref={localVideoRef}
-              autoPlay
-              muted
-              className="w-full h-full object-cover  shadow-xl bg-gray-900"
-              style={{ position: "absolute", top: 0, left: 0, zIndex: 1 }}
+                ref={localVideoRef}
+                autoPlay
+                muted
+                className="w-full h-full object-cover bg-gray-900"
+                style={{ position: "absolute", top: 0, left: 0, zIndex: 1 }}
               />
               {/* Remote video as overlay in the corner */}
               <div
-              className="absolute top-6 right-6 w-48 h-32 md:w-64 md:h-40 rounded-xl overflow-hidden shadow-2xl border-4 border-white/20 bg-gray-900"
-              style={{ zIndex: 2 }}
+                className="absolute top-6 right-6 w-48 h-32 md:w-64 md:h-40 rounded-xl overflow-hidden shadow-2xl border-4 border-white/20 bg-gray-900"
+                style={{ zIndex: 2 }}
               >
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                className="w-full h-full object-cover"
-              />
+                <video
+                  ref={remoteVideoRef}
+                  autoPlay
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
 
             {/* Overlay button group at the bottom */}
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-auto flex justify-center gap-4 z-20">
               <Button
-              onClick={endCall}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                onClick={endCall}
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-              <PhoneOff className="mr-2" /> End Call
+                <Phone />
               </Button>
               <Button
-              onClick={() => {
-                if (localVideoRef.current) {
-                localVideoRef.current.muted = !localVideoRef.current.muted;
-                }
-              }}
-              className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                onClick={() => {
+                  if (localVideoRef.current) {
+                    localVideoRef.current.muted = !localVideoRef.current.muted;
+                  }
+                }}
+                className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-              Mute
+                <MicOff />
               </Button>
               <Button
-              onClick={() => {
-                if (localVideoRef.current) {
-                localVideoRef.current.srcObject = null;
-                }
-              }}
-              className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                onClick={() => {
+                  if (localVideoRef.current) {
+                    localVideoRef.current.srcObject = null;
+                  }
+                }}
+                className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-              Turn Off Video
+                <CameraOffIcon />
+              </Button>
+              <Button
+                onClick={() => {
+                  if (localVideoRef.current) {
+                    localVideoRef.current.srcObject = null;
+                  }
+                }}
+                className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+              >
+                <ToggleLeftIcon />
               </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
       {isReceivingAudioCall && (
