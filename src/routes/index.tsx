@@ -566,16 +566,20 @@ function RouteComponent() {
     }
   }, [onlineusers]);
 
-  const toggleMute = () => {
-    const audioTrack = localAudioStreamRef.current?.getAudioTracks()[0];
-    if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
-    setIsMuted(!isMuted);
+  const toggleMute = (cType: string) => {
+    if (cType === "video") {
+      const audioTrack = localVideoStreamRef.current?.getTracks()[0];
+      if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
+      setIsMuted(!isMuted);
+    }
   };
 
-  const toggleCamera = () => {
-    const videoTrack = localVideoStreamRef.current?.getVideoTracks()[0];
-    if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
-    setIsCameraOff(!isCameraOff);
+  const toggleCamera = (cType: string) => {
+    if (cType === "video") {
+      const videoTrack = localVideoStreamRef.current?.getTracks()[1];
+      if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
+      setIsCameraOff(!isCameraOff);
+    }
   };
 
   return (
@@ -654,13 +658,13 @@ function RouteComponent() {
                 <Phone />
               </Button>
               <Button
-                onClick={toggleMute}
+                onClick={() => toggleMute("video")}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 {isMuted ? <Mic /> : <MicOff />}
               </Button>
               <Button
-                onClick={toggleCamera}
+                onClick={() => toggleCamera("video")}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 {isCameraOff ? <CameraIcon /> : <CameraOffIcon />}
