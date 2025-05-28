@@ -69,6 +69,7 @@ function RouteComponent() {
   const [callerId, setCallerId] = useState<string>("");
   const [calleeId, setCalleeId] = useState<string>("");
   const [callType, setCallType] = useState<string>("");
+  const [callerName, setCallerName] = useState<string>("");
   const [offer, setOffer] = useState<RTCSessionDescriptionInit | null>(null);
   const [isReceivingCall, setIsReceivingCall] = useState(false);
   const [isReceivingAudioCall, setIsReceivingAudioCall] = useState(false);
@@ -310,7 +311,7 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("https://react-social-server.onrender.com", {
+    socketRef.current = io("http://localhost:3000", {
       withCredentials: true,
     });
     return () => {
@@ -465,25 +466,28 @@ function RouteComponent() {
         .catch((err) => console.error("Error accessing media devices:", err));
     }
 
-    socketRef.current!.on("incomingCall", ({ from, offer, cType }) => {
-      console.log(cType);
-      setCallerId(from);
-      setOffer(offer);
-      setCallType(cType);
-      const ringtone = new Audio("/messenger_video_call.mp3");
-      ringtone.loop = true;
-      ringtone.play().catch((e) => {
-        console.warn("Ringtone play failed:", e);
-      });
+    socketRef.current!.on(
+      "incomingCall",
+      ({ from, callerName, offer, cType }) => {
+        setCallerId(from);
+        setCallerName(callerName);
+        setOffer(offer);
+        setCallType(cType);
+        const ringtone = new Audio("/messenger_video_call.mp3");
+        ringtone.loop = true;
+        ringtone.play().catch((e) => {
+          console.warn("Ringtone play failed:", e);
+        });
 
-      ringtoneRef.current = ringtone;
-      ringtone.volume = 1.0;
-      if (cType === "audio") {
-        setIsReceivingAudioCall(true);
-      } else {
-        setIsReceivingCall(true);
+        ringtoneRef.current = ringtone;
+        ringtone.volume = 1.0;
+        if (cType === "audio") {
+          setIsReceivingAudioCall(true);
+        } else {
+          setIsReceivingCall(true);
+        }
       }
-    });
+    );
 
     socketRef.current!.on("callAnswered", async ({ answer, cType }) => {
       console.log({ answer, cType });
@@ -548,11 +552,12 @@ function RouteComponent() {
   };
 
   const endCall = () => {
-    window.location.reload();
+    window.location.href = "/";
   };
 
   useEffect(() => {
     const self = onlineusers.find((item) => item.email === user?.email);
+
     if (self) {
       setId(self.id);
     }
@@ -568,17 +573,14 @@ function RouteComponent() {
                 <Avatar className="w-24 h-24">
                   <AvatarImage src="https://i.pravatar.cc/300" />
                   <AvatarFallback className="text-xl">
-                    <span className="text-2xl font-bold">
-                      {callerId
-                        ? onlineusers.find((it) => it.id === callerId)?.name
-                        : "Ankit"}
+                    <span className="text-2xl text-white font-bold">
+                      {callerName}
                     </span>
                   </AvatarFallback>
                 </Avatar>
-                <h2 className="text-2xl font-semibold">
-                  {callerId
-                    ? onlineusers.find((it) => it.id === callerId)?.name
-                    : "Ankit"}
+                <h2 className="text-2xl text-white font-semibold">
+                  {" "}
+                  {callerName}
                 </h2>
                 <p className="text-sm text-zinc-400">is calling you...</p>
                 <div className="flex gap-4 mt-6">
@@ -650,17 +652,13 @@ function RouteComponent() {
                 <Avatar className="w-24 h-24">
                   <AvatarImage src="https://i.pravatar.cc/300" />
                   <AvatarFallback className="text-xl">
-                    <span className="text-2xl font-bold">
-                      {callerId
-                        ? onlineusers.find((it) => it.id === callerId)?.name
-                        : "Ankit"}
+                    <span className="text-2xl text-white font-bold">
+                      {callerName}
                     </span>
                   </AvatarFallback>
                 </Avatar>
-                <h2 className="text-2xl font-semibold">
-                  {callerId
-                    ? onlineusers.find((it) => it.id === callerId)?.name
-                    : "Ankit"}
+                <h2 className="text-2xl text-white font-semibold">
+                  {callerName}
                 </h2>
                 <p className="text-sm text-zinc-400">is calling you...</p>
 
@@ -694,20 +692,26 @@ function RouteComponent() {
                 <Avatar className="w-24 h-24">
                   <AvatarImage src="https://i.pravatar.cc/300" />
                   <AvatarFallback className="text-xl">
-                    <span className="text-2xl font-bold">Ankit</span>
+                    <span className="text-2xl text-white font-bold">
+                      {callerId
+                        ? onlineusers.find((it) => it.id === callerId)?.name
+                        : calleeId
+                          ? onlineusers.find((it) => it.id === calleeId)?.name
+                          : "Himel"}
+                    </span>
                   </AvatarFallback>
                 </Avatar>
-                <h2 className="text-2xl font-semibold">{"Ankit"}</h2>
-                <p className="text-sm text-zinc-400">is calling you...</p>
-
-                <p className="text-white">{`inAudioCall: ${inAudioCall}`}</p>
-                <p className="text-white">{`isReceivingAudioCall: ${isReceivingAudioCall}`}</p>
+                <h2 className="text-2xl text-white font-semibold">
+                  {callerId
+                    ? onlineusers.find((it) => it.id === callerId)?.name
+                    : calleeId
+                      ? onlineusers.find((it) => it.id === calleeId)?.name
+                      : "Himel"}
+                </h2>
                 <div className="flex gap-4 mt-6">
                   <>
-                    <p className="text-white">{`inAudioCall: ${inAudioCall}`}</p>
-                    <p className="text-white">{`isReceivingAudioCall: ${isReceivingAudioCall}`}</p>
-                    <audio ref={localAudioRef} controls autoPlay muted></audio>
-                    <audio ref={remoteAudioRef} controls autoPlay></audio>
+                    <audio ref={localAudioRef} autoPlay muted></audio>
+                    <audio ref={remoteAudioRef} autoPlay></audio>
                     <Button
                       onClick={endCall}
                       variant="destructive"
@@ -756,7 +760,7 @@ function RouteComponent() {
             {/* Sidebar - Online Users (Desktop) */}
             <div className="hidden sm:block w-64 bg-white/10 backdrop-blur-md p-4 space-y-2 overflow-y-auto">
               <h2 className="text-lg font-semibold mb-2">Online Users</h2>
-              <p>{id}</p>
+              <hr className="" />
               {onlineusers.map((user) => (
                 <div
                   key={user.id}
