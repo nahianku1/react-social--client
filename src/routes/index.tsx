@@ -474,13 +474,10 @@ function RouteComponent() {
         setOffer(offer);
         setCallType(cType);
         const ringtone = new Audio("/messenger_video_call.mp3");
-        ringtone.loop = true;
-        ringtone.play().catch((e) => {
-          console.warn("Ringtone play failed:", e);
-        });
-
         ringtoneRef.current = ringtone;
         ringtone.volume = 1.0;
+        ringtone.loop = true;
+        ringtone.play()
         if (cType === "audio") {
           setIsReceivingAudioCall(true);
         } else {
