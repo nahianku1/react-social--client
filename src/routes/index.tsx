@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 type message = {
@@ -69,6 +68,8 @@ function RouteComponent() {
   const [inVideoCall, setInVideoCall] = useState<boolean>(false);
   const [accepted, setAccepted] = useState<boolean>(false);
   const [inAudioCall, setInAudioCall] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isCameraOff, setIsCameraOff] = useState<boolean>(false);
   const [id, setId] = useState<string>("");
   const [callerId, setCallerId] = useState<string>("");
   const [calleeId, setCalleeId] = useState<string>("");
@@ -558,11 +559,22 @@ function RouteComponent() {
 
   useEffect(() => {
     const self = onlineusers.find((item) => item.email === user?.email);
-
     if (self) {
       setId(self.id);
     }
   }, [onlineusers]);
+
+  const toggleMute = () => {
+    const audioTrack = localAudioStreamRef.current?.getAudioTracks()[0];
+    if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
+    setIsMuted(!isMuted);
+  };
+
+  const toggleCamera = () => {
+    const videoTrack = localVideoStreamRef.current?.getVideoTracks()[0];
+    if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
+    setIsCameraOff(!isCameraOff);
+  };
 
   return (
     <>
@@ -620,7 +632,7 @@ function RouteComponent() {
               />
               {/* Remote video as overlay in the corner */}
               <div
-                className="absolute top-6 right-6 w-48 h-32 md:w-64 md:h-40 rounded-xl overflow-hidden shadow-2xl border-4 border-white/20 bg-gray-900"
+                className="absolute top-6 right-6 w-32 h-48 md:w-40 md:h-68 rounded-xl overflow-hidden shadow-2xl border-4 border-white/20 bg-gray-900"
                 style={{ zIndex: 2 }}
               >
                 <video
@@ -640,21 +652,13 @@ function RouteComponent() {
                 <Phone />
               </Button>
               <Button
-                onClick={() => {
-                  if (localVideoRef.current) {
-                    localVideoRef.current.muted = !localVideoRef.current.muted;
-                  }
-                }}
+                onClick={toggleMute}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 <MicOff />
               </Button>
               <Button
-                onClick={() => {
-                  if (localVideoRef.current) {
-                    localVideoRef.current.srcObject = null;
-                  }
-                }}
+                onClick={toggleCamera}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 <CameraOffIcon />
