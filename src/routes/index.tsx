@@ -703,19 +703,19 @@ function RouteComponent() {
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-auto flex justify-center gap-4 z-20">
               <Button
                 onClick={endCall}
-                className="bg-red-600 w-16 h-16 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-red-600 w-12 h-12 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 <Phone size={48} />
               </Button>
               <Button
                 onClick={() => toggleMute("video")}
-                className="bg-gray-700 w-16 h-16 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-gray-700 w-12 h-12 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 {isMuted ? <Mic size={48} /> : <MicOff size={48} />}
               </Button>
               <Button
                 onClick={() => toggleCamera("video")}
-                className="bg-gray-700 w-16 h-16 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-gray-700 w-12 h-12 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 {isCameraOff ? (
                   <CameraIcon size={48} />
@@ -725,7 +725,7 @@ function RouteComponent() {
               </Button>
               <Button
                 onClick={switchCamera}
-                className="bg-gray-700 w-16 h-16 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-gray-700 w-12 h-12 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 <RefreshCcw size={48} />
               </Button>
