@@ -15,8 +15,10 @@ import { useEffect, useRef, useState } from "react";
 import { isAuthenticated } from "@/utils/isAuthenticated";
 import { io, Socket } from "socket.io-client";
 import {
+  CameraIcon,
   CameraOffIcon,
   FileArchive,
+  Mic,
   MicOff,
   Phone,
   PhoneCall,
@@ -655,13 +657,13 @@ function RouteComponent() {
                 onClick={toggleMute}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                <MicOff />
+                {isMuted ? <Mic /> : <MicOff />}
               </Button>
               <Button
                 onClick={toggleCamera}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                <CameraOffIcon />
+                {isCameraOff ? <CameraIcon /> : <CameraOffIcon />}
               </Button>
               <Button
                 onClick={() => {
