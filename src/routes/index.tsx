@@ -24,7 +24,7 @@ import {
   PhoneCall,
   PhoneIncoming,
   PhoneOff,
-  ToggleLeftIcon,
+  RefreshCcw,
   VideoIcon,
 } from "lucide-react";
 
@@ -665,15 +665,8 @@ function RouteComponent() {
               >
                 {isCameraOff ? <CameraIcon /> : <CameraOffIcon />}
               </Button>
-              <Button
-                onClick={() => {
-                  if (localVideoRef.current) {
-                    localVideoRef.current.srcObject = null;
-                  }
-                }}
-                className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
-              >
-                <ToggleLeftIcon />
+              <Button className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg">
+                <RefreshCcw />
               </Button>
             </div>
           </div>
