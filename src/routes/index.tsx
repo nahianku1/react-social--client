@@ -311,7 +311,7 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:3000", {
+    socketRef.current = io("https://react-social-server.onrender.com", {
       withCredentials: true,
     });
     return () => {
@@ -475,9 +475,9 @@ function RouteComponent() {
         setCallType(cType);
         const ringtone = new Audio("/messenger_video_call.mp3");
         ringtoneRef.current = ringtone;
-        ringtone.play();
         ringtone.volume = 1.0;
         ringtone.loop = true;
+        ringtone.play();
         if (cType === "audio") {
           setIsReceivingAudioCall(true);
         } else {
