@@ -606,7 +606,7 @@ function RouteComponent() {
 
       // Replace the video track in the peer connection if needed
       // (Assuming you have a variable `peerConnection`)
-      const videoTrack = newStream.getVideoTracks()[0];
+      const videoTrack = newStream.getTracks()[1];
       const sender = callPeerRef
         .current!.getSenders()
         .find((s) => s.track?.kind === "video");
