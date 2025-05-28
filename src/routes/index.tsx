@@ -565,7 +565,9 @@ function RouteComponent() {
     if (self) {
       setId(self.id);
     }
-  }, [onlineusers]);
+    const audioTrack = localVideoStreamRef.current?.getTracks()[0];
+    console.log(audioTrack?.enabled);
+  }, [onlineusers, isMuted]);
 
   const toggleMute = (cType: string) => {
     if (cType === "video") {
@@ -599,6 +601,7 @@ function RouteComponent() {
       });
 
       const newVideoTrack = newStream.getVideoTracks()[0];
+      console.log({ newVideoTrack });
 
       // Replace local video element
       if (localVideoRef.current) {
@@ -695,25 +698,25 @@ function RouteComponent() {
                 onClick={endCall}
                 className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                <Phone />
+                <Phone size={32}/>
               </Button>
               <Button
                 onClick={() => toggleMute("video")}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                {isMuted ? <Mic /> : <MicOff />}
+                {isMuted ? <Mic size={32}/> : <MicOff size={32}/>}
               </Button>
               <Button
                 onClick={() => toggleCamera("video")}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                {isCameraOff ? <CameraIcon /> : <CameraOffIcon />}
+                {isCameraOff ? <CameraIcon size={32}/> : <CameraOffIcon size={32}/>}
               </Button>
               <Button
                 onClick={switchCamera}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
-                <RefreshCcw />
+                <RefreshCcw size={32}/>
               </Button>
             </div>
           </div>
