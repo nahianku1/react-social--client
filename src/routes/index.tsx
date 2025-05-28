@@ -79,7 +79,7 @@ function RouteComponent() {
   const [callerName, setCallerName] = useState<string>("");
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [offer, setOffer] = useState<RTCSessionDescriptionInit | null>(null);
-  const [isReceivingCall, setIsReceivingCall] = useState(false);
+  const [isReceivingVideoCall, setIsReceivingVideoCall] = useState(false);
   const [isReceivingAudioCall, setIsReceivingAudioCall] = useState(false);
   const [onlineusers, setOnelineUsers] = useState<onlineuser[] | []>([]);
   const [user, setUser] = useState<user | null>(
@@ -463,7 +463,7 @@ function RouteComponent() {
               cType: callType,
             });
             if (callType === "video") {
-              setIsReceivingCall(false);
+              setIsReceivingVideoCall(false);
               setInVideoCall(true);
             } else {
               setIsReceivingAudioCall(false);
@@ -489,7 +489,7 @@ function RouteComponent() {
         if (cType === "audio") {
           setIsReceivingAudioCall(true);
         } else {
-          setIsReceivingCall(true);
+          setIsReceivingVideoCall(true);
         }
       }
     );
@@ -565,9 +565,7 @@ function RouteComponent() {
     if (self) {
       setId(self.id);
     }
-    const audioTrack = localVideoStreamRef.current?.getTracks()[0];
-    console.log(audioTrack?.enabled);
-  }, [onlineusers, isMuted]);
+  }, [onlineusers]);
 
   const toggleMute = (cType: string) => {
     if (cType === "video") {
@@ -635,7 +633,7 @@ function RouteComponent() {
 
   return (
     <>
-      {isReceivingCall && (
+      {isReceivingVideoCall && (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-900 to-black text-white">
           <div className="backdrop-blur-md bg-white/5 p-6 rounded-2xl shadow-2xl max-w-sm w-full">
             <Card className="bg-transparent border border-white/10 shadow-none">
@@ -705,19 +703,19 @@ function RouteComponent() {
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-auto flex justify-center gap-4 z-20">
               <Button
                 onClick={endCall}
-                className="bg-red-600 w-8 h-8 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-red-600 w-16 h-16 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 <Phone size={48} />
               </Button>
               <Button
                 onClick={() => toggleMute("video")}
-                className="bg-gray-700 w-8 h-8 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-gray-700 w-16 h-16 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 {isMuted ? <Mic size={48} /> : <MicOff size={48} />}
               </Button>
               <Button
                 onClick={() => toggleCamera("video")}
-                className="bg-gray-700 w-8 h-8 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-gray-700 w-16 h-16 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 {isCameraOff ? (
                   <CameraIcon size={48} />
@@ -727,7 +725,7 @@ function RouteComponent() {
               </Button>
               <Button
                 onClick={switchCamera}
-                className="bg-gray-700 w-8 h-8 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                className="bg-gray-700 w-16 h-16 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 <RefreshCcw size={48} />
               </Button>
@@ -821,7 +819,7 @@ function RouteComponent() {
       {!inVideoCall &&
         !inAudioCall &&
         !isReceivingAudioCall &&
-        !isReceivingCall && (
+        !isReceivingVideoCall && (
           <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 text-white flex flex-col">
             {/* Top Bar */}
             <div className="flex justify-between items-center px-6 py-4 bg-white/10 backdrop-blur-md shadow-md">
