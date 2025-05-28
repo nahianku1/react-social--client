@@ -77,6 +77,7 @@ function RouteComponent() {
   const [calleeId, setCalleeId] = useState<string>("");
   const [callType, setCallType] = useState<string>("");
   const [callerName, setCallerName] = useState<string>("");
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [offer, setOffer] = useState<RTCSessionDescriptionInit | null>(null);
   const [isReceivingCall, setIsReceivingCall] = useState(false);
   const [isReceivingAudioCall, setIsReceivingAudioCall] = useState(false);
@@ -582,6 +583,45 @@ function RouteComponent() {
     }
   };
 
+  const switchCamera = async () => {
+    try {
+      const newFacingMode = facingMode === "user" ? "environment" : "user";
+
+      // Stop all current video tracks
+      localVideoStreamRef.current
+        ?.getTracks()
+        .forEach((track) => track.kind === "video" && track.stop());
+
+      // Get new stream with new facingMode
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: newFacingMode } },
+        audio: true,
+      });
+
+      // Replace the stream in the video element
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = newStream;
+      }
+
+      // Replace the video track in the peer connection if needed
+      // (Assuming you have a variable `peerConnection`)
+      const videoTrack = newStream.getVideoTracks()[0];
+      const sender = callPeerRef
+        .current!.getSenders()
+        .find((s) => s.track?.kind === "video");
+      if (sender) {
+        sender.replaceTrack(videoTrack);
+      }
+
+      // Update refs and state
+      localVideoStreamRef.current = newStream;
+      setFacingMode(newFacingMode);
+    } catch (err) {
+      console.error("Failed to toggle camera:", err);
+    }
+  };
+
   return (
     <>
       {isReceivingCall && (
@@ -669,7 +709,10 @@ function RouteComponent() {
               >
                 {isCameraOff ? <CameraIcon /> : <CameraOffIcon />}
               </Button>
-              <Button className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg">
+              <Button
+                onClick={switchCamera}
+                className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+              >
                 <RefreshCcw />
               </Button>
             </div>
