@@ -118,3 +118,29 @@
     @apply bg-background text-foreground;
   }
 }
+
+.bg-custom-back {
+  background-image: linear-gradient(
+    to right top,
+    #f4a6d2,
+    #e9ade0,
+    #dcb3eb,
+    #cebaf2,
+    #c0c1f7,
+    #b4c8fc,
+    #a8cfff,
+    #9ed5ff,
+    #92ddff,
+    #8ae5fc,
+    #89ecf6,
+    #90f2ec
+  );
+}
+
+.bg-button {
+  background-color: #7fe4dd;
+}
+
+.text-custom {
+  color: black;
+}

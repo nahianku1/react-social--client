@@ -47,17 +47,17 @@ function RouteComponent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen text-black flex items-center justify-center bg-custom-back px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-sm sm:max-w-md md:max-w-lg p-6 sm:p-8 backdrop-blur-xl bg-white/20 border border-white/30 rounded-2xl shadow-lg">
         <CardHeader>
-          <CardTitle className="text-center text-white text-2xl sm:text-3xl font-semibold">
+          <CardTitle className="text-center  text-2xl sm:text-3xl font-semibold">
             Welcome Back
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white">
+              <Label htmlFor="email" className="">
                 Email
               </Label>
               <Input
@@ -70,7 +70,7 @@ function RouteComponent() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-white">
+              <Label htmlFor="password" className="">
                 Password
               </Label>
               <Input
@@ -84,22 +84,20 @@ function RouteComponent() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-white text-purple-600 hover:bg-gray-100 transition-all font-semibold text-base sm:text-lg"
+              className="w-full bg-white text-black  hover:bg-gray-100 transition-all font-semibold text-base sm:text-lg"
             >
               Sign In
             </Button>
 
-            {message && (
-              <p className="text-sm text-white text-center">{message}</p>
-            )}
+            {message && <p className="text-sm  text-center">{message}</p>}
 
-            <div className="text-sm text-white text-center">
+            <div className="text-sm  text-center">
               Forgot your password?{" "}
               <a href="#" className="underline hover:text-gray-200">
                 Reset it
               </a>
             </div>
-            <div className="text-sm text-white text-center">
+            <div className="text-sm  text-center">
               Don't have an account?{" "}
               <Link to="/signup" className="underline hover:text-gray-200">
                 Click here

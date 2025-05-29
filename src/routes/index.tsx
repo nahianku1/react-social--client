@@ -820,10 +820,10 @@ function RouteComponent() {
         !inAudioCall &&
         !isReceivingAudioCall &&
         !isReceivingVideoCall && (
-          <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 text-white flex flex-col">
+          <div className="min-h-screen bg-custom-back text-custom flex flex-col">
             {/* Top Bar */}
             <div className="flex justify-between items-center px-6 py-4 bg-white/10 backdrop-blur-md shadow-md">
-              <h1 className="text-xl ml-8 font-semibold">Chat App</h1>
+              <h1 className="text-xl ml-8 font-semibold ">Chat App</h1>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Avatar className="cursor-pointer border-2 border-white">
@@ -875,14 +875,14 @@ function RouteComponent() {
                         <Button
                           onClick={() => handleCall(user?.id, "video")}
                           disabled={user.id === id}
-                          className="w-10 h-10 cursor-pointer"
+                          className="w-8 h-8 cursor-pointer"
                         >
                           <VideoIcon />
                         </Button>
                         <Button
                           onClick={() => handleCall(user?.id, "audio")}
                           disabled={user.id === id}
-                          className="w-10 h-10 cursor-pointer"
+                          className="w-8 h-8 cursor-pointer"
                         >
                           <PhoneCall />
                         </Button>
@@ -898,7 +898,7 @@ function RouteComponent() {
                   <SheetTrigger asChild>
                     <Button
                       size="icon"
-                      className="bg-white/20 text-white hover:bg-white/30"
+                      className="bg-white/30 text-black hover:bg-white/40"
                     >
                       <span className="sr-only">Open Online Users</span>
                       <svg
@@ -915,7 +915,7 @@ function RouteComponent() {
                   </SheetTrigger>
                   <SheetContent
                     side="left"
-                    className="w-64 bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 backdrop-blur-md p-4 space-y-2"
+                    className="w-64 bg-custom-back p-4 space-y-2"
                     style={{ maxHeight: "100vh", overflowY: "auto" }}
                   >
                     <h2 className="text-lg font-semibold mb-2">Online Users</h2>
@@ -942,14 +942,14 @@ function RouteComponent() {
                             <Button
                               onClick={() => handleCall(user?.id, "video")}
                               disabled={user.id === id}
-                              className="w-8 h-8 cursor-pointer"
+                              className="w-10 h-10 cursor-pointer"
                             >
                               <VideoIcon />
                             </Button>
                             <Button
                               onClick={() => handleCall(user?.id, "audio")}
                               disabled={user.id === id}
-                              className="w-8 h-8 cursor-pointer"
+                              className="w-10 h-10 cursor-pointer"
                             >
                               <PhoneCall />
                             </Button>
@@ -1032,14 +1032,14 @@ function RouteComponent() {
                         <Button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="bg-purple-600 text-white hover:bg-purple-700"
+                          className="bg-button cursor-pointer text-black hover:bg-cyan-500"
                         >
                           <FileArchive />
                         </Button>
                       </div>
                       <Button
                         type="submit"
-                        className="bg-purple-600 text-white hover:bg-purple-700"
+                        className="bg-button cursor-pointer text-black hover:bg-cyan-500"
                       >
                         Send
                       </Button>
