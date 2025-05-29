@@ -319,9 +319,10 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("https://react-social-server.onrender.com", {
+    socketRef.current = io("http://localhost:3000", {
       withCredentials: true,
     });
+
     return () => {
       socketRef.current?.disconnect();
     };
@@ -494,6 +495,10 @@ function RouteComponent() {
       }
     );
 
+    socketRef.current!.on("rejected", () => {
+      window.location.href = "/";
+    });
+
     socketRef.current!.on("callAnswered", async ({ answer, cType }) => {
       console.log({ answer, cType });
 
@@ -557,6 +562,11 @@ function RouteComponent() {
   };
 
   const endCall = () => {
+    window.location.href = "/";
+  };
+
+  const rejectCall = (cType: string) => {
+    socketRef.current?.emit("rejected", { to: callerId, cType });
     window.location.href = "/";
   };
 
@@ -660,12 +670,12 @@ function RouteComponent() {
                     Accept
                   </Button>
                   <Button
-                    onClick={endCall}
+                    onClick={() => rejectCall("video")}
                     variant="destructive"
                     className="shadow-md"
                   >
                     <PhoneOff className="mr-2 h-4 w-4" />
-                    Decline
+                    Reject
                   </Button>
                 </div>
               </CardContent>
@@ -760,12 +770,12 @@ function RouteComponent() {
                     Accept
                   </Button>
                   <Button
-                    onClick={endCall}
+                    onClick={() => rejectCall("audio")}
                     variant="destructive"
                     className="shadow-md"
                   >
                     <PhoneOff className="mr-2 h-4 w-4" />
-                    Decline
+                    Reject
                   </Button>
                 </div>
               </CardContent>
@@ -822,6 +832,7 @@ function RouteComponent() {
         !isReceivingVideoCall && (
           <div className="min-h-screen bg-custom-back text-custom flex flex-col">
             {/* Top Bar */}
+
             <div className="flex justify-between items-center px-6 py-4 bg-white/10 backdrop-blur-md shadow-md">
               <h1 className="text-xl ml-8 font-semibold ">Chat App</h1>
               <DropdownMenu>
@@ -852,7 +863,7 @@ function RouteComponent() {
               {/* Sidebar - Online Users (Desktop) */}
               <div className="hidden sm:block w-64 p-3 space-y-2 overflow-y-auto h-full max-h-screen">
                 <h2 className="text-lg font-semibold mb-2">Online Users</h2>
-                <hr className="" />
+                <hr className="border-black" />
                 <div className="space-y-2">
                   {onlineusers.map((user) => (
                     <div
@@ -919,7 +930,7 @@ function RouteComponent() {
                     style={{ maxHeight: "100vh", overflowY: "auto" }}
                   >
                     <h2 className="text-lg font-semibold mb-2">Online Users</h2>
-                    <hr />
+                    <hr className="border-black" />
                     <div className="space-y-2">
                       {onlineusers.map((user) => (
                         <div
