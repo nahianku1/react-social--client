@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { isAuthenticated } from "@/utils/isAuthenticated";
 import { io, Socket } from "socket.io-client";
 import {
+  Bell,
   CameraIcon,
   CameraOffIcon,
   FileArchive,
@@ -860,28 +861,48 @@ function RouteComponent() {
 
             <div className="flex justify-between items-center px-6 py-4 bg-white/10 backdrop-blur-md shadow-md">
               <h1 className="text-xl ml-8 font-semibold ">Chat App</h1>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="cursor-pointer border-2 border-white">
-                    <AvatarImage src="https://i.pravatar.cc/300" alt="User" />
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="mt-2 w-40">
-                  <DropdownMenuItem className="cursor-pointer">
-                    Profile
+              <div className="flex gap-4 items-center justify-center">
+                {" "}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Bell fill="black" className="cursor-pointer"/>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="mt-2 w-80">
+                  <DropdownMenuItem className="flex flex-col items-start gap-1">
+                    <span className="font-semibold text-red-600">Missed Call</span>
+                    <span className="text-xs text-gray-500">You missed a call from John Doe</span>
+                    <span className="text-xs text-gray-400">Today at 2:15 PM</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    Settings
+                  <DropdownMenuItem className="flex flex-col items-start gap-1">
+                    <span className="font-semibold text-red-600">Missed Call</span>
+                    <span className="text-xs text-gray-500">You missed a call from Jane Smith</span>
+                    <span className="text-xs text-gray-400">Yesterday at 8:45 PM</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="text-red-600 cursor-pointer"
-                  >
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar className="cursor-pointer border-2 border-white">
+                      <AvatarImage src="https://i.pravatar.cc/300" alt="User" />
+                      <AvatarFallback>U</AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="mt-2 w-40">
+                    <DropdownMenuItem className="cursor-pointer">
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-red-600 cursor-pointer"
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             <div className="flex flex-1 overflow-hidden">
