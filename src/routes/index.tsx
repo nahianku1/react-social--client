@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -97,6 +98,7 @@ function RouteComponent() {
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
   const localAudioStreamRef = useRef<MediaStream | null>(null);
+  const timeoutRef = useRef<number | null>(null);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -482,17 +484,18 @@ function RouteComponent() {
         setCallerName(callerName);
         setOffer(offer);
         setCallType(cType);
-        let ringtone = new Audio("/messenger_video_call.mp3");
+        const ringtone = new Audio("/messenger_video_call.mp3");
         ringtoneRef.current = ringtone;
         ringtone.volume = 1.0;
         ringtone.loop = true;
         ringtone.play();
-        setTimeout(() => {
+        timeoutRef.current = window.setTimeout(() => {
           ringtoneRef.current!.pause();
           ringtoneRef.current!.currentTime = 0;
           ringtoneRef.current = null;
           window.location.href = "/";
-        }, 10000);
+          socketRef.current?.emit("rejected", { to: callerId});
+        }, 30000);
         if (cType === "audio") {
           setIsReceivingAudioCall(true);
         } else {
@@ -532,6 +535,13 @@ function RouteComponent() {
         callPeerRef.current.addIceCandidate(candidate);
       }
     });
+
+    return () => {
+      if (timeoutRef.current !== null) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
   }, [user, callType, accepted]);
 
   const handleCall = (toId: string, cType: string) => {
