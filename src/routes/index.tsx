@@ -327,6 +327,10 @@ function RouteComponent() {
 
     return () => {
       socketRef.current?.disconnect();
+      if (timeoutRef.current !== null) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
     };
   }, []);
 
@@ -537,13 +541,6 @@ function RouteComponent() {
         callPeerRef.current.addIceCandidate(candidate);
       }
     });
-
-    return () => {
-      if (timeoutRef.current !== null) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
   }, [user, callType, accepted]);
 
   const handleCall = (toId: string, cType: string) => {
