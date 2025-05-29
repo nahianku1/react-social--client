@@ -32,6 +32,7 @@ import {
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { getCallTimeDiffs } from "@/utils/getCallTimeDiffs";
 
 type message = {
   id: string;
@@ -79,6 +80,13 @@ function RouteComponent() {
   const [calleeId, setCalleeId] = useState<string>("");
   const [callType, setCallType] = useState<string>("");
   const [callerName, setCallerName] = useState<string>("");
+  const [callTime, setCallTime] = useState<Date | string | null>(null);
+  const [notification, setNotification] = useState<
+    {
+      caller: string;
+      time: Date;
+    }[]
+  >([]);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [offer, setOffer] = useState<RTCSessionDescriptionInit | null>(null);
   const [isReceivingVideoCall, setIsReceivingVideoCall] = useState(false);
@@ -489,6 +497,7 @@ function RouteComponent() {
         setCallerName(callerName);
         setOffer(offer);
         setCallType(cType);
+        setCallTime(new Date());
         const ringtone = new Audio("/messenger_video_call.mp3");
         ringtoneRef.current = ringtone;
         ringtone.volume = 1.0;
@@ -499,6 +508,10 @@ function RouteComponent() {
           ringtoneRef.current!.pause();
           ringtoneRef.current!.currentTime = 0;
           ringtoneRef.current = null;
+          setNotification((prev) => [
+            ...prev,
+            { caller: callerName, time: new Date() },
+          ]);
           socketRef.current?.emit("rejected", { to: from });
           window.location.href = "/";
         }, 30000);
@@ -865,20 +878,32 @@ function RouteComponent() {
                 {" "}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Bell fill="black" className="cursor-pointer"/>
+                    <Bell fill="black" className="cursor-pointer" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="mt-2 w-80">
-                  <DropdownMenuItem className="flex flex-col items-start gap-1">
-                    <span className="font-semibold text-red-600">Missed Call</span>
-                    <span className="text-xs text-gray-500">You missed a call from John Doe</span>
-                    <span className="text-xs text-gray-400">Today at 2:15 PM</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex flex-col items-start gap-1">
-                    <span className="font-semibold text-red-600">Missed Call</span>
-                    <span className="text-xs text-gray-500">You missed a call from Jane Smith</span>
-                    <span className="text-xs text-gray-400">Yesterday at 8:45 PM</span>
-                  </DropdownMenuItem>
-                  </DropdownMenuContent>
+                  {notification.toString() ? (
+                    <DropdownMenuContent className="mt-2 w-80">
+                      {notification.map((it) => (
+                        <DropdownMenuItem className="flex flex-col items-start gap-1">
+                          <span className="font-semibold text-red-600">
+                            Missed Call
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            You missed a call from {it.caller}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {getCallTimeDiffs(callTime!)}
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  ) : (
+                    <DropdownMenuContent className="mt-2 w-80">
+                      <DropdownMenuItem className="flex flex-col items-start gap-1">
+                      <span className="text-gray-500">No notifications</span>
+                      
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  )}
                 </DropdownMenu>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
