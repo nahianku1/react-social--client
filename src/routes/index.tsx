@@ -489,13 +489,15 @@ function RouteComponent() {
         ringtone.volume = 1.0;
         ringtone.loop = true;
         ringtone.play();
+
         timeoutRef.current = window.setTimeout(() => {
           ringtoneRef.current!.pause();
           ringtoneRef.current!.currentTime = 0;
           ringtoneRef.current = null;
-          socketRef.current?.emit("rejected", { to: callerId});
+          socketRef.current?.emit("rejected", { to: from });
           window.location.href = "/";
         }, 30000);
+
         if (cType === "audio") {
           setIsReceivingAudioCall(true);
         } else {
