@@ -482,11 +482,17 @@ function RouteComponent() {
         setCallerName(callerName);
         setOffer(offer);
         setCallType(cType);
-        const ringtone = new Audio("/messenger_video_call.mp3");
+        let ringtone = new Audio("/messenger_video_call.mp3");
         ringtoneRef.current = ringtone;
         ringtone.volume = 1.0;
         ringtone.loop = true;
         ringtone.play();
+        setTimeout(() => {
+          ringtoneRef.current!.pause();
+          ringtoneRef.current!.currentTime = 0;
+          ringtoneRef.current = null;
+          window.location.href = "/";
+        }, 10000);
         if (cType === "audio") {
           setIsReceivingAudioCall(true);
         } else {
