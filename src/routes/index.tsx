@@ -582,6 +582,12 @@ function RouteComponent() {
       const audioTrack = localVideoStreamRef.current?.getTracks()[0];
       if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
       setIsMuted(!isMuted);
+    } else {
+      const audioTrack = (
+        localAudioRef.current?.srcObject as MediaStream
+      ).getAudioTracks()[0];
+      if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
+      setIsMuted(!isMuted);
     }
   };
 
@@ -813,11 +819,15 @@ function RouteComponent() {
                     <audio ref={remoteAudioRef} autoPlay></audio>
                     <Button
                       onClick={endCall}
-                      variant="destructive"
-                      className="shadow-md"
+                      className="bg-red-600 w-12 h-12 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
                     >
-                      <PhoneOff className="mr-2 h-4 w-4" />
-                      End Call
+                      <Phone size={48} />
+                    </Button>
+                    <Button
+                      onClick={() => toggleMute("audio")}
+                      className="bg-gray-700 w-12 h-12 hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
+                    >
+                      {isMuted ? <Mic size={48} /> : <MicOff size={48} />}
                     </Button>
                   </>
                 </div>
