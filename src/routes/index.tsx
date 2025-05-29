@@ -512,8 +512,12 @@ function RouteComponent() {
             ...prev,
             { caller: callerName, time: new Date() },
           ]);
-          socketRef.current?.emit("rejected", { to: from });
-          window.location.href = "/";
+          socketRef.current?.emit("rejected", { to: from, cType });
+          if (cType === "video") {
+            setIsReceivingVideoCall(false);
+          } else {
+            setIsReceivingAudioCall(false);
+          }
         }, 30000);
 
         if (cType === "audio") {
@@ -524,8 +528,12 @@ function RouteComponent() {
       }
     );
 
-    socketRef.current!.on("rejected", () => {
-      window.location.href = "/";
+    socketRef.current!.on("rejected", ({ _, cType }) => {
+      if (cType === "video") {
+        setInVideoCall(false);
+      } else {
+        setInAudioCall(false);
+      }
     });
 
     socketRef.current!.on("callAnswered", async ({ answer, cType }) => {
@@ -596,7 +604,11 @@ function RouteComponent() {
 
   const rejectCall = (cType: string) => {
     socketRef.current?.emit("rejected", { to: callerId, cType });
-    window.location.href = "/";
+    if (cType === "video") {
+      setIsReceivingVideoCall(false);
+    } else {
+      setIsReceivingAudioCall(false);
+    }
   };
 
   useEffect(() => {
@@ -899,8 +911,7 @@ function RouteComponent() {
                   ) : (
                     <DropdownMenuContent className="mt-2 w-80">
                       <DropdownMenuItem className="flex flex-col items-start gap-1">
-                      <span className="text-gray-500">No notifications</span>
-                      
+                        <span className="text-gray-500">No notifications</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   )}
