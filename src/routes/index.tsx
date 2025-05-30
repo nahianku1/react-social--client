@@ -330,7 +330,7 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:3000", {
+    socketRef.current = io("https://react-social-server.onrender.com", {
       withCredentials: true,
     });
 
