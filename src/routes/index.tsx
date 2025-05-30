@@ -64,7 +64,9 @@ type onlineuser = {
 
 const iceServers = [
   {
-    urls: "stun:stun.l.google.com:19302",
+    urls: "relay1.expressturn.com:3480",
+    username: "000000002063985225",
+    credential: "YTvc7Yg5aImQ3jEX2SOhD/zidEM=",
   },
 ];
 
@@ -137,6 +139,7 @@ function RouteComponent() {
   const createPeerConnection = (peerId: string, createDataChannel: boolean) => {
     const pc = new RTCPeerConnection({
       iceServers,
+      iceTransportPolicy: "relay",
     });
 
     peerRef.current![peerId] = pc;
@@ -171,11 +174,8 @@ function RouteComponent() {
 
   const createCallPeerConnection = (to: string) => {
     const pc = new RTCPeerConnection({
-      iceServers: [
-        {
-          urls: "stun:stun.l.google.com:19302",
-        },
-      ],
+      iceServers,
+      iceTransportPolicy: "relay",
     });
 
     pc.onicecandidate = (event) => {
@@ -330,7 +330,7 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("https://react-social-server.onrender.com", {
+    socketRef.current = io("http://localhost:3000", {
       withCredentials: true,
     });
 
@@ -493,6 +493,12 @@ function RouteComponent() {
     socketRef.current!.on(
       "incomingCall",
       ({ from, callerName, offer, cType }) => {
+        if (timeoutRef.current !== null) {
+          ringtoneRef.current!.pause();
+          ringtoneRef.current!.currentTime = 0;
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
         setCallerId(from);
         setCallerName(callerName);
         setOffer(offer);
@@ -528,12 +534,19 @@ function RouteComponent() {
       }
     );
 
-    socketRef.current!.on("rejected", ({ _, cType }) => {
+    socketRef.current!.on("rejected", ({ cType }) => {
+      if (timeoutRef.current !== null) {
+        ringtoneRef.current!.pause();
+        ringtoneRef.current!.currentTime = 0;
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       if (cType === "video") {
         setInVideoCall(false);
       } else {
         setInAudioCall(false);
       }
+      window.location.href = "/";
     });
 
     socketRef.current!.on("callAnswered", async ({ answer, cType }) => {
@@ -565,7 +578,7 @@ function RouteComponent() {
     });
   }, [user, callType, accepted]);
 
-  const handleCall = (toId: string, cType: string) => {
+  const initiateCall = (toId: string, cType: string) => {
     if (cType === "video") {
       setCalleeId(toId);
       setCallType(cType);
@@ -582,17 +595,19 @@ function RouteComponent() {
     if (cType === "video") {
       setAccepted(true);
       setInVideoCall(true);
-      if (ringtoneRef.current) {
+      if (ringtoneRef.current !== null) {
         ringtoneRef.current.pause();
         ringtoneRef.current.currentTime = 0;
+        clearTimeout(timeoutRef.current!);
         ringtoneRef.current = null;
       }
     } else {
       setAccepted(true);
       setInAudioCall(true);
-      if (ringtoneRef.current) {
+      if (ringtoneRef.current !== null) {
         ringtoneRef.current.pause();
         ringtoneRef.current.currentTime = 0;
+        clearTimeout(timeoutRef.current!);
         ringtoneRef.current = null;
       }
     }
@@ -603,12 +618,19 @@ function RouteComponent() {
   };
 
   const rejectCall = (cType: string) => {
+    if (timeoutRef.current !== null) {
+      ringtoneRef.current!.pause();
+      ringtoneRef.current!.currentTime = 0;
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     socketRef.current?.emit("rejected", { to: callerId, cType });
     if (cType === "video") {
       setIsReceivingVideoCall(false);
     } else {
       setIsReceivingAudioCall(false);
     }
+    window.location.href = "/";
   };
 
   useEffect(() => {
@@ -966,14 +988,14 @@ function RouteComponent() {
                       </div>
                       <div className="flex  gap-2">
                         <Button
-                          onClick={() => handleCall(user?.id, "video")}
+                          onClick={() => initiateCall(user?.id, "video")}
                           disabled={user.id === id}
                           className="w-8 h-8 cursor-pointer"
                         >
                           <VideoIcon />
                         </Button>
                         <Button
-                          onClick={() => handleCall(user?.id, "audio")}
+                          onClick={() => initiateCall(user?.id, "audio")}
                           disabled={user.id === id}
                           className="w-8 h-8 cursor-pointer"
                         >
@@ -1033,14 +1055,14 @@ function RouteComponent() {
                           </div>
                           <div className="flex gap-2">
                             <Button
-                              onClick={() => handleCall(user?.id, "video")}
+                              onClick={() => initiateCall(user?.id, "video")}
                               disabled={user.id === id}
                               className="w-10 h-10 cursor-pointer"
                             >
                               <VideoIcon />
                             </Button>
                             <Button
-                              onClick={() => handleCall(user?.id, "audio")}
+                              onClick={() => initiateCall(user?.id, "audio")}
                               disabled={user.id === id}
                               className="w-10 h-10 cursor-pointer"
                             >
