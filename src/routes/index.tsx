@@ -64,7 +64,7 @@ type onlineuser = {
 
 const iceServers = [
   {
-    urls: "turn:relay1.expressturn.com:3480",
+    urls: "turn:relay1.expressturn.com:3480?transport=tcp",
     username: "000000002063985225",
     credential: "YTvc7Yg5aImQ3jEX2SOhD/zidEM=",
   },
@@ -82,6 +82,7 @@ function RouteComponent() {
   const [calleeId, setCalleeId] = useState<string>("");
   const [callType, setCallType] = useState<string>("");
   const [callerName, setCallerName] = useState<string>("");
+  const [iceCandidates, setIceCandidates] = useState<RTCIceCandidate[]>([]);
   const [callTime, setCallTime] = useState<Date | string | null>(null);
   const [notification, setNotification] = useState<
     {
@@ -105,7 +106,6 @@ function RouteComponent() {
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const localVideoStreamRef = useRef<MediaStream | null>(null);
-  const iceCandidateRef = useRef<RTCIceCandidate[]>([]);
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
@@ -181,10 +181,8 @@ function RouteComponent() {
 
     pc.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
-        socketRef.current.emit("iceCandidate", {
-          to,
-          candidate: event.candidate,
-        });
+        console.log({ candidate: event.candidate });
+        iceCandidates.push(event.candidate);
       }
     };
 
@@ -331,7 +329,7 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("https://react-social-server.onrender.com", {
+    socketRef.current = io("http://localhost:3000", {
       withCredentials: true,
     });
 
@@ -431,11 +429,16 @@ function RouteComponent() {
           callPeerRef.current = createCallPeerConnection(calleeId);
           callPeerRef.current.createOffer().then((offer) => {
             callPeerRef.current!.setLocalDescription(offer);
-            socketRef.current?.emit("call", {
-              to: calleeId,
-              offer,
-              cType: callType,
-            });
+            callPeerRef.current!.onicegatheringstatechange = () => {
+              if (callPeerRef.current?.iceGatheringState === "complete") {
+                socketRef.current?.emit("call", {
+                  to: calleeId,
+                  offer,
+                  cType: callType,
+                  candidates: iceCandidates,
+                });
+              }
+            };
           });
         })
         .catch((err) => console.error("Error accessing media devices:", err));
@@ -474,11 +477,19 @@ function RouteComponent() {
           pc.setRemoteDescription(offer!);
           callPeerRef.current?.createAnswer().then((answer) => {
             callPeerRef.current?.setLocalDescription(answer);
-            socketRef.current?.emit("callAnswered", {
-              to: callerId,
-              answer,
-              cType: callType,
+            iceCandidates.forEach((iceCandidate) => {
+              callPeerRef.current!.addIceCandidate(iceCandidate);
             });
+            callPeerRef.current!.onicegatheringstatechange = () => {
+              if (callPeerRef.current?.iceGatheringState === "complete") {
+                socketRef.current?.emit("callAnswered", {
+                  to: callerId,
+                  answer,
+                  cType: callType,
+                  candidates: iceCandidates,
+                });
+              }
+            };
             if (callType === "video") {
               setIsReceivingVideoCall(false);
               setInVideoCall(true);
@@ -493,13 +504,14 @@ function RouteComponent() {
 
     socketRef.current!.on(
       "incomingCall",
-      ({ from, callerName, offer, cType }) => {
+      ({ from, callerName, offer, cType, candidates }) => {
         if (timeoutRef.current !== null) {
           ringtoneRef.current!.pause();
           ringtoneRef.current!.currentTime = 0;
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
         }
+        setIceCandidates(candidates);
         setCallerId(from);
         setCallerName(callerName);
         setOffer(offer);
@@ -550,36 +562,50 @@ function RouteComponent() {
       window.location.href = "/";
     });
 
-    socketRef.current!.on("callAnswered", async ({ answer, cType }) => {
-      console.log({ answer, cType });
+    socketRef.current!.on(
+      "callAnswered",
+      async ({ answer, cType, candidates }) => {
+        console.log({ answer, cType, candidates });
 
-      if (callPeerRef.current) {
-        if (callPeerRef.current.signalingState === "have-local-offer") {
-          await callPeerRef.current.setRemoteDescription(answer);
+        if (callPeerRef.current) {
+          if (callPeerRef.current.signalingState === "have-local-offer") {
+            await callPeerRef.current.setRemoteDescription(answer);
+            candidates.forEach((iceCandidate: RTCIceCandidate) => {
+              callPeerRef.current!.addIceCandidate(iceCandidate);
+            });
+          } else {
+            console.warn(
+              `Skipping setRemoteDescription for  — current state: ${callPeerRef.current.signalingState}`
+            );
+          }
+        }
+        if (cType === "video") {
+          setInAudioCall(false);
+          setInVideoCall(true);
         } else {
-          console.warn(
-            `Skipping setRemoteDescription for  — current state: ${callPeerRef.current.signalingState}`
-          );
+          setInVideoCall(false);
+          setInAudioCall(true);
         }
       }
-      if (cType === "video") {
-        setInAudioCall(false);
-        setInVideoCall(true);
-      } else {
-        setInVideoCall(false);
-        setInAudioCall(true);
-      }
-    });
+    );
 
     socketRef.current!.on("iceCandidate", ({ candidate }) => {
       if (callPeerRef.current) {
         if (!callPeerRef.current.remoteDescription) {
-          console.log("Remote description not set yet, queuing candidate");
+          console.log(
+            "Remote description not set yet, queuing candidate",
+            candidate
+          );
 
           // Queue the candidate until remote description is set
           iceCandidateRef.current.push(candidate);
         } else {
-          console.log("Adding ICE candidate to peer connection");
+          console.log("Adding ICE candidate to peer connection", candidate);
+          console.log(
+            "Current ICE connection state:",
+            callPeerRef.current.iceConnectionState
+          );
+          console.log(iceCandidateRef.current);
 
           // Add any queued candidates first
           iceCandidateRef.current.forEach((iceCandidate) => {
@@ -893,8 +919,8 @@ function RouteComponent() {
                 </h2>
                 <div className="flex gap-4 mt-6">
                   <>
-                    <audio ref={localAudioRef} controls  autoPlay muted></audio>
-                    <audio ref={remoteAudioRef}  controls autoPlay></audio>
+                    <audio ref={localAudioRef} controls autoPlay muted></audio>
+                    <audio ref={remoteAudioRef} controls autoPlay></audio>
                     <Button
                       onClick={endCall}
                       className="bg-red-600 w-12 h-12 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
