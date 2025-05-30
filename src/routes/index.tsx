@@ -105,6 +105,7 @@ function RouteComponent() {
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const localVideoStreamRef = useRef<MediaStream | null>(null);
+  const iceCandidateRef = useRef<RTCIceCandidate[]>([]);
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
@@ -572,8 +573,22 @@ function RouteComponent() {
 
     socketRef.current!.on("iceCandidate", ({ candidate }) => {
       if (callPeerRef.current) {
-        console.log({ candidate });
-        callPeerRef.current.addIceCandidate(candidate);
+        if (!callPeerRef.current.remoteDescription) {
+          console.log("Remote description not set yet, queuing candidate");
+
+          // Queue the candidate until remote description is set
+          iceCandidateRef.current.push(candidate);
+        } else {
+          console.log("Adding ICE candidate to peer connection");
+
+          // Add any queued candidates first
+          iceCandidateRef.current.forEach((iceCandidate) => {
+            callPeerRef.current!.addIceCandidate(iceCandidate);
+          });
+          iceCandidateRef.current = [];
+          // Add the current candidate
+          callPeerRef.current.addIceCandidate(candidate);
+        }
       }
     });
   }, [user, callType, accepted]);
@@ -878,8 +893,8 @@ function RouteComponent() {
                 </h2>
                 <div className="flex gap-4 mt-6">
                   <>
-                    <audio ref={localAudioRef} autoPlay muted></audio>
-                    <audio ref={remoteAudioRef} autoPlay></audio>
+                    <audio ref={localAudioRef} controls  autoPlay muted></audio>
+                    <audio ref={remoteAudioRef}  controls autoPlay></audio>
                     <Button
                       onClick={endCall}
                       className="bg-red-600 w-12 h-12 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
