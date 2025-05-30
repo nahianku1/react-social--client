@@ -64,7 +64,7 @@ type onlineuser = {
 
 const iceServers = [
   {
-    urls: "relay1.expressturn.com:3480",
+    urls: "turn:relay1.expressturn.com:3480",
     username: "000000002063985225",
     credential: "YTvc7Yg5aImQ3jEX2SOhD/zidEM=",
   },
