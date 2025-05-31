@@ -563,6 +563,21 @@ function RouteComponent() {
       window.location.href = "/";
     });
 
+    socketRef.current!.on("endCall", ({ cType }) => {
+      if (timeoutRef.current !== null) {
+        ringtoneRef.current!.pause();
+        ringtoneRef.current!.currentTime = 0;
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      if (cType === "video") {
+        setInVideoCall(false);
+      } else {
+        setInAudioCall(false);
+      }
+      window.location.href = "/";
+    });
+
     socketRef.current!.on(
       "callAnswered",
       async ({ answer, cType, candidates }) => {
@@ -655,10 +670,6 @@ function RouteComponent() {
     }
   };
 
-  const endCall = () => {
-    window.location.href = "/";
-  };
-
   const rejectCall = (cType: string) => {
     if (timeoutRef.current !== null) {
       ringtoneRef.current!.pause();
@@ -671,6 +682,15 @@ function RouteComponent() {
       setIsReceivingVideoCall(false);
     } else {
       setIsReceivingAudioCall(false);
+    }
+    window.location.href = "/";
+  };
+  const endCall = (cType: string) => {
+    socketRef.current?.emit("endCall", { to: callerId, cType });
+    if (cType === "video") {
+      setInVideoCall(false);
+    } else {
+      setInAudioCall(false);
     }
     window.location.href = "/";
   };
@@ -823,7 +843,7 @@ function RouteComponent() {
             {/* Overlay button group at the bottom */}
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-auto flex justify-center gap-4 z-20">
               <Button
-                onClick={endCall}
+                onClick={() => endCall("video")}
                 className="bg-red-600 w-12 h-12 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
               >
                 <Phone size={48} />
@@ -923,7 +943,7 @@ function RouteComponent() {
                     <audio ref={localAudioRef} autoPlay muted></audio>
                     <audio ref={remoteAudioRef} autoPlay></audio>
                     <Button
-                      onClick={endCall}
+                      onClick={() => endCall("audio")}
                       className="bg-red-600 w-12 h-12 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
                     >
                       <Phone size={48} />
