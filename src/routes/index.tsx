@@ -919,8 +919,8 @@ function RouteComponent() {
                 </h2>
                 <div className="flex gap-4 mt-6">
                   <>
-                    <audio ref={localAudioRef} controls autoPlay muted></audio>
-                    <audio ref={remoteAudioRef} controls autoPlay></audio>
+                    <audio ref={localAudioRef} autoPlay muted></audio>
+                    <audio ref={remoteAudioRef} autoPlay></audio>
                     <Button
                       onClick={endCall}
                       className="bg-red-600 w-12 h-12 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-lg shadow-lg"
