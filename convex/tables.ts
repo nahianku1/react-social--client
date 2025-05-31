@@ -6,6 +6,5 @@ export default defineSchema({
     from: v.string(),
     to: v.string(),
     text: v.string(),
-    createdAt: v.string(),
   }),
 });

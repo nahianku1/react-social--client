@@ -12,7 +12,6 @@ export const insertMessage = mutation({
       from: args.from,
       to: args.to,
       text: args.text,
-      createdAt: new Date(),
     });
   },
 });
