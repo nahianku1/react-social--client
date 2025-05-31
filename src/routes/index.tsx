@@ -564,6 +564,8 @@ function RouteComponent() {
     });
 
     socketRef.current!.on("endCall", ({ cType }) => {
+      console.log("Call ended by peer");
+
       if (timeoutRef.current !== null) {
         ringtoneRef.current!.pause();
         ringtoneRef.current!.currentTime = 0;
@@ -604,35 +606,6 @@ function RouteComponent() {
         }
       }
     );
-
-    socketRef.current!.on("iceCandidate", ({ candidate }) => {
-      if (callPeerRef.current) {
-        if (!callPeerRef.current.remoteDescription) {
-          console.log(
-            "Remote description not set yet, queuing candidate",
-            candidate
-          );
-
-          // Queue the candidate until remote description is set
-          iceCandidateRef.current.push(candidate);
-        } else {
-          console.log("Adding ICE candidate to peer connection", candidate);
-          console.log(
-            "Current ICE connection state:",
-            callPeerRef.current.iceConnectionState
-          );
-          console.log(iceCandidateRef.current);
-
-          // Add any queued candidates first
-          iceCandidateRef.current.forEach((iceCandidate) => {
-            callPeerRef.current!.addIceCandidate(iceCandidate);
-          });
-          iceCandidateRef.current = [];
-          // Add the current candidate
-          callPeerRef.current.addIceCandidate(candidate);
-        }
-      }
-    });
   }, [user, callType, accepted]);
 
   const initiateCall = (toId: string, cType: string) => {
@@ -686,7 +659,7 @@ function RouteComponent() {
     window.location.href = "/";
   };
   const endCall = (cType: string) => {
-    socketRef.current?.emit("endCall", { to: callerId, cType });
+    socketRef.current?.emit("endCall", { to: callerId || calleeId, cType });
     if (cType === "video") {
       setInVideoCall(false);
     } else {
