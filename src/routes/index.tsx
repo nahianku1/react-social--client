@@ -133,7 +133,7 @@ function RouteComponent() {
       content: input?.value!,
     };
     setMessages((prev) => (prev ? [...prev, newMessage] : [newMessage]));
-    createMessage({ from: id, to: socketRef.current!.id!, text: input.value! });
+    void createMessage({ from: id, to: socketRef.current!.id!, text: input.value! });
     Object.values(datachannelRef.current).forEach((dataChannel) => {
       if (dataChannel!.readyState === "open") { // Check if the data channel is open before sending
         dataChannel!.send(JSON.stringify(newMessage));

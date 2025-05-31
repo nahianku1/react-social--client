@@ -8,7 +8,7 @@ export const insertMessage = mutation({
     text: v.string(),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("message", {
+    await ctx.db.insert("message", {
       from: args.from,
       to: args.to,
       text: args.text,

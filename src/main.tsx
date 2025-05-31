@@ -13,6 +13,9 @@ const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 // Create a new router instance
 const router = createRouter({ routeTree });
 
+console.log("Convex URL:", import.meta.env.VITE_CONVEX_URL);
+
+
 // Register the router instance for type safety
 declare module "@tanstack/react-router" {
   interface Register {
