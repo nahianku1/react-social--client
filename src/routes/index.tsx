@@ -33,7 +33,8 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { getCallTimeDiffs } from "@/utils/getCallTimeDiffs";
-import { MessageCircle } from "lucide-react";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 type message = {
   id: string;
@@ -114,6 +115,8 @@ function RouteComponent() {
   const timeoutRef = useRef<number | null>(null);
   const navigate = useNavigate();
 
+  const createMessage = useMutation(api.message.insertMessage);
+
   const handleLogout = () => {
     localStorage.setItem("authenticated", "false");
     navigate({ to: "/signin" });
@@ -130,6 +133,7 @@ function RouteComponent() {
       content: input?.value!,
     };
     setMessages((prev) => (prev ? [...prev, newMessage] : [newMessage]));
+    createMessage({ from: id, to: socketRef.current!.id!, text: input.value! });
     Object.values(datachannelRef.current).forEach((dataChannel) => {
       if (dataChannel!.readyState === "open") {
         dataChannel!.send(JSON.stringify(newMessage));
