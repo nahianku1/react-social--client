@@ -3,9 +3,13 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import "./index.css";
 
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+
+
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 // Create a new router instance
 const router = createRouter({ routeTree });
 
@@ -22,8 +26,9 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <RouterProvider router={router} />
-      
+      <ConvexProvider client={convex}>
+        <RouterProvider router={router} />
+      </ConvexProvider>
     </StrictMode>
   );
 }
