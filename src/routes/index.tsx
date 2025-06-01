@@ -1192,6 +1192,12 @@ function RouteComponent() {
                       {onlineusers.map((user) => (
                         <div
                           key={user.id}
+                          onClick={() =>
+                            handleTargetedUser({
+                              targetEmail: user.email,
+                              targetId: user.id,
+                            })
+                          }
                           className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
                         >
                           <div className="flex justify-start gap-2">
