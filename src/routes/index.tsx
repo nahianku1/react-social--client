@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
@@ -33,14 +34,16 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { getCallTimeDiffs } from "@/utils/getCallTimeDiffs";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 type message = {
-  id: string;
+  from: string;
+  to: string;
   email: string;
   name: string;
-  content?: string;
+  content: string;
+  targetedPeer?: string;
   isFile?: boolean;
   fileName?: string;
   meta?: metadata;
@@ -83,6 +86,8 @@ function RouteComponent() {
   const [callerId, setCallerId] = useState<string>("");
   const [calleeId, setCalleeId] = useState<string>("");
   const [callType, setCallType] = useState<string>("");
+  const fileSenderMeta = useRef<Record<string, unknown>>({});
+  const [targetedPeer, setTargetedPeer] = useState<Record<string, unknown>>({});
   const [callerName, setCallerName] = useState<string>("");
   const [iceCandidates, setIceCandidates] = useState<RTCIceCandidate[]>([]);
   const [callTime, setCallTime] = useState<Date | string | null>(null);
@@ -115,6 +120,8 @@ function RouteComponent() {
   const timeoutRef = useRef<number | null>(null);
   const navigate = useNavigate();
 
+  const convex = useConvex();
+
   const createMessage = useMutation(api.message.insertMessage);
 
   const handleLogout = () => {
@@ -127,18 +134,16 @@ function RouteComponent() {
     const form = e.target as HTMLFormElement;
     const input = form.elements[0] as HTMLInputElement;
     const newMessage: message = {
-      id: id,
+      from: user?.email!,
+      to: targetedPeer.targetEmail as string,
       email: user?.email!,
       name: user?.name!,
       content: input?.value!,
     };
     setMessages((prev) => (prev ? [...prev, newMessage] : [newMessage]));
-    void createMessage({ from: id, to: socketRef.current!.id!, text: input.value! });
-    Object.values(datachannelRef.current).forEach((dataChannel) => {
-      if (dataChannel!.readyState === "open") { // Check if the data channel is open before sending
-        dataChannel!.send(JSON.stringify(newMessage));
-      }
-    });
+    datachannelRef.current![targetedPeer?.targetId as string]?.send(
+      JSON.stringify(newMessage)
+    );
     input.value = "";
   };
 
@@ -225,50 +230,15 @@ function RouteComponent() {
     dataChannel.onmessage = (e) => handleMessage(e.data);
   };
 
-  const handleMessage = (data: string | ArrayBuffer) => {
-    const parsed = JSON.parse(data);
-    if (!parsed?.isFile) {
-      console.log("Received string data:", parsed);
-      try {
-        setMessages((prev) => [...prev, parsed]);
-      } catch {
-        console.error("Failed to parse message data:", data);
-      }
-    } else if (parsed?.isFile) {
-      console.log("Received ArrayBuffer data:", data);
-
-      const blobParts: ArrayBuffer[] = [];
-      const fileSize = parsed?.meta?.size;
-      let receivedBytes = 0;
-
-      Object.values(datachannelRef.current).forEach((dataChannel) => {
-        if (dataChannel!.readyState === "open") {
-          dataChannel!.onmessage = (chunkEvent) => {
-            blobParts.push(chunkEvent.data);
-            receivedBytes += chunkEvent.data.byteLength;
-
-            // File transfer completed
-            if (receivedBytes >= fileSize!) {
-              const blob = new Blob(blobParts);
-              const url = URL.createObjectURL(blob);
-              console.log("File URL:", url);
-
-              setMessages((prev) => [...prev, { ...parsed, content: url }]);
-              dataChannel!.onmessage = (e) => handleMessage(e.data);
-            }
-          };
-        }
-      });
-    }
-  };
-
   const sendFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     // Send file metadata
     const newMessage: message = {
-      id: id,
+      from: user?.email!,
+      to: targetedPeer.targetEmail as string,
+      targetedPeer: id,
       email: user?.email!,
       name: user?.name!,
       isFile: true,
@@ -276,18 +246,23 @@ function RouteComponent() {
       meta: { size: file.size, type: file.type },
     };
 
-    Object.values(datachannelRef.current).forEach((dataChannel) => {
-      if (dataChannel!.readyState === "open") {
-        dataChannel!.send(JSON.stringify(newMessage));
-      }
-    });
+    if (
+      datachannelRef.current![targetedPeer?.targetId as string]?.readyState ===
+      "open"
+    ) {
+      datachannelRef.current![targetedPeer?.targetId as string]?.send(
+        JSON.stringify(newMessage)
+      );
+    }
 
     // Read and send file in chunks
     const reader = new FileReader();
 
     reader.onload = () => {
       const newMessage: message = {
-        id: id,
+        from: user?.email!,
+        to: targetedPeer.targetEmail as string,
+        targetedPeer: id,
         email: user?.email!,
         name: user?.name!,
         content: reader.result as string,
@@ -296,28 +271,57 @@ function RouteComponent() {
         meta: { size: file.size, type: file.type },
       };
       setMessages((prev) => [...prev, newMessage]);
+      // createMessage(newMessage);
     };
 
     reader.readAsDataURL(file);
     sendToPeers(file);
   };
 
-  const sendToPeers = (file) => {
-    const chunkSize = 16384;
-    const reader = new FileReader();
-    let offset = 0;
-    const blobParts: ArrayBuffer[] = [];
-    let receivedBytes = 0;
+  // Store file receiving state per peer
+  const fileReceiveState = useRef<
+    Record<
+      string,
+      {
+        blobParts: ArrayBuffer[];
+        fileSize: number;
+        receivedBytes: number;
+        newMessage: message;
+      }
+    >
+  >({});
 
-    reader.onload = () => {
-      if (reader.result) {
-        Object.values(datachannelRef.current).forEach((dataChannel) => {
-          if (dataChannel!.readyState === "open") {
-            dataChannel!.send(reader.result);
-            blobParts.push(reader.result as ArrayBuffer);
-            receivedBytes += (reader.result as ArrayBuffer).byteLength;
-          }
-        });
+  const sendToPeers = (file: File) => {
+    const chunkSize = 16384;
+    let offset = 0;
+
+    const dataChannel =
+      datachannelRef.current![targetedPeer?.targetId as string];
+    if (!dataChannel || dataChannel.readyState !== "open") return;
+
+    // Send file metadata first
+    dataChannel.send(
+      JSON.stringify({
+        isFile: true,
+        fileName: file.name,
+        targetedPeer: id,
+        meta: { size: file.size, type: file.type },
+        from: user?.email!,
+        to: targetedPeer.targetEmail as string,
+        email: user?.email!,
+        name: user?.name!,
+      })
+    );
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      // Only send ArrayBuffer, not string
+      if (
+        e.target?.result instanceof ArrayBuffer &&
+        dataChannel.readyState === "open"
+      ) {
+        dataChannel.send(e.target.result);
         offset += chunkSize;
         if (offset < file.size) {
           readNextChunk();
@@ -331,6 +335,76 @@ function RouteComponent() {
     };
 
     readNextChunk();
+  };
+
+  const handleMessage = (data: string | ArrayBuffer) => {
+    if (typeof data === "string") {
+      const parsed = JSON.parse(data);
+      const newMessage: message = {
+        from: parsed.from,
+        to: parsed.to,
+        email: parsed.email,
+        name: parsed.name,
+        content: parsed.content,
+      };
+
+      fileSenderMeta.current = parsed;
+      try {
+        if (parsed.isFile) {
+          // Initialize file receive state for this peer
+          if (parsed.targetedPeer) {
+            fileReceiveState.current[parsed.targetedPeer as string] = {
+              blobParts: [],
+              fileSize: parsed.meta?.size ?? 0,
+              receivedBytes: 0,
+              newMessage: {
+                from: parsed.from,
+                to: parsed.to,
+                email: parsed.email,
+                name: parsed.name,
+                content: "",
+                isFile: true,
+                fileName: parsed.fileName,
+                meta: parsed.meta,
+                targetedPeer: parsed.targetedPeer,
+              },
+            };
+          }
+        } else {
+          setMessages((prev) => [...prev, parsed]);
+          console.log(newMessage);
+          createMessage(newMessage);
+        }
+      } catch {
+        console.error("Failed to parse message data:", data);
+      }
+    } else if (data instanceof ArrayBuffer) {
+      // Find the current peer receiving the file
+      const peerId = fileSenderMeta.current?.targetedPeer as string;
+      if (!peerId || !fileReceiveState.current[peerId]) return;
+
+      const state = fileReceiveState.current[peerId];
+      state.blobParts.push(data);
+      state.receivedBytes += data.byteLength;
+
+      // Debug log
+      console.log(
+        `Received ${state.receivedBytes} bytes of ${state.fileSize} bytes`
+      );
+
+      // File transfer completed
+      if (state.receivedBytes >= state.fileSize) {
+        const blob = new Blob(state.blobParts, {
+          type: state.newMessage.meta?.type,
+        });
+        const url = URL.createObjectURL(blob);
+        setMessages((prev) => [...prev, { ...state.newMessage, content: url }]);
+        // Clean up state for this peer
+        datachannelRef!.current[peerId]!.onmessage = (e) =>
+          handleMessage(e.data);
+        delete fileReceiveState.current[peerId];
+      }
+    }
   };
 
   useEffect(() => {
@@ -523,11 +597,12 @@ function RouteComponent() {
         setCallType(cType);
         setCallTime(new Date());
         const ringtone = new Audio("/messenger_video_call.mp3");
-        ringtoneRef.current = ringtone;
         ringtone.volume = 1.0;
         ringtone.loop = true;
-        ringtone.play();
-
+        ringtoneRef.current = ringtone;
+        if (ringtoneRef.current) {
+          ringtoneRef.current.play();
+        }
         timeoutRef.current = window.setTimeout(() => {
           ringtoneRef.current!.pause();
           ringtoneRef.current!.currentTime = 0;
@@ -669,6 +744,7 @@ function RouteComponent() {
     }
     window.location.href = "/";
   };
+
   const endCall = (cType: string) => {
     socketRef.current?.emit("endCall", { to: callerId || calleeId, cType });
     if (cType === "video") {
@@ -677,6 +753,18 @@ function RouteComponent() {
       setInAudioCall(false);
     }
     window.location.href = "/";
+  };
+
+  const handleTargetedUser = async (targetPeer: {
+    targetEmail: string;
+    targetId: string;
+  }) => {
+    setTargetedPeer(targetPeer);
+    const res = await convex.query(api.message.getMessages, {
+      from: user?.email!,
+      to: targetPeer.targetEmail,
+    });
+    setMessages(res || []);
   };
 
   useEffect(() => {
@@ -1030,8 +1118,15 @@ function RouteComponent() {
                   {onlineusers.map((user) => (
                     <div
                       key={user.id}
+                      onClick={() =>
+                        handleTargetedUser({
+                          targetEmail: user.email,
+                          targetId: user.id,
+                        })
+                      }
                       className="flex flex-col justify-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/20 transition"
                     >
+                      <p>{user.id}</p>
                       <div className="flex justify-start gap-2">
                         <div className="relative w-8 h-8 ">
                           <span className="w-2 h-2 rounded-full absolute z-10 right-0 top-0 bg-green-400"></span>
@@ -1137,37 +1232,28 @@ function RouteComponent() {
               {/* Chat Section */}
               <div className="flex-1 relative flex flex-col bg-white overflow-hidden min-h-0">
                 {/* Message List */}
-                <ScrollArea className="flex-1 p-4 min-h-0">
-                  <div className="flex flex-col gap-3">
-                    {messages.map((msg, index) => (
-                      <div
-                        key={index}
-                        className={`max-w-xs sm:max-w-sm p-3 rounded-lg ${
-                          msg.email === user?.email
-                            ? "self-end bg-purple-100 text-purple-900"
-                            : "self-start bg-gray-200 text-gray-900"
-                        }`}
-                      >
-                        <span className="block text-sm mb-1 font-medium">
-                          {msg.name}:
-                        </span>
-                        <p>
-                          {msg.isFile && !msg?.meta?.type.includes("image") ? (
-                            <a
-                              className="underline"
-                              href={msg.content}
-                              download={msg.fileName}
-                            >
-                              {msg.fileName}
-                            </a>
-                          ) : msg.isFile &&
-                            msg?.meta?.type.includes("image") ? (
-                            <>
-                              <img
-                                className="w-[200px] mb-1 h-[120px]"
-                                src={msg?.content}
-                                alt=""
-                              />
+                {!targetedPeer ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-gray-500">Select a user to chat</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="flex-1 p-4 min-h-0">
+                    <div className="flex flex-col gap-3">
+                      {messages.map((msg, index) => (
+                        <div
+                          key={index}
+                          className={`max-w-xs sm:max-w-sm p-3 rounded-lg ${
+                            msg.email === user?.email
+                              ? "self-end bg-purple-100 text-purple-900"
+                              : "self-start bg-gray-200 text-gray-900"
+                          }`}
+                        >
+                          <span className="block text-sm mb-1 font-medium">
+                            {msg.name}:
+                          </span>
+                          <p>
+                            {msg.isFile &&
+                            !msg?.meta?.type.includes("image") ? (
                               <a
                                 className="underline"
                                 href={msg.content}
@@ -1175,15 +1261,31 @@ function RouteComponent() {
                               >
                                 {msg.fileName}
                               </a>
-                            </>
-                          ) : (
-                            msg.content
-                          )}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
+                            ) : msg.isFile &&
+                              msg?.meta?.type.includes("image") ? (
+                              <>
+                                <img
+                                  className="w-[200px] mb-1 h-[120px]"
+                                  src={msg?.content}
+                                  alt=""
+                                />
+                                <a
+                                  className="underline"
+                                  href={msg.content}
+                                  download={msg.fileName}
+                                >
+                                  {msg.fileName}
+                                </a>
+                              </>
+                            ) : (
+                              msg.content
+                            )}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
 
                 {/* Chat Input at Bottom */}
                 {/* Overlay Chat Input Form */}

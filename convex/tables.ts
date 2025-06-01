@@ -5,6 +5,16 @@ export default defineSchema({
   message: defineTable({
     from: v.string(),
     to: v.string(),
-    text: v.string(),
+    email: v.string(),
+    name: v.string(),
+    content: v.string(),
+    isFile: v.optional(v.boolean()),
+    fileName: v.optional(v.string()),
+    meta: v.optional(
+      v.object({
+        size: v.number(),
+        type: v.string(),
+      })
+    ),
   }),
 });
