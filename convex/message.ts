@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { internalAction, mutation } from "./_generated/server";
+import { mutation, query, internalAction } from "./_generated/server";
 import { v } from "convex/values";
-import { query } from "./_generated/server";
-import { Storage } from "megajs";
 import { internal } from "../convex/_generated/api";
 
+// Insert message mutation (handles text or file)
 export const insertMessage = mutation({
   args: {
     from: v.string(),
@@ -22,16 +20,25 @@ export const insertMessage = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await ctx.scheduler.runAfter(0, internal.message.fileUpload, {
-      file: args.content as ArrayBuffer[],
-      name: args.fileName as string,
-    });
+    let content: string;
+
+    if (args.isFile) {
+      // Upload file and get public URL
+      content = await ctx.scheduler.runAfter(0, internal.message.fileUpload, {
+        file: args.content as ArrayBuffer[],
+      });
+    } else {
+      // Plain text message
+      content = args.content as string;
+    }
+
+    // Store message in DB
     await ctx.db.insert("message", {
       from: args.from,
       to: args.to,
       email: args.email,
       name: args.name,
-      content: args.content,
+      content,
       isFile: args.isFile || false,
       fileName: args.fileName || null,
       meta: args.meta || null,
@@ -39,35 +46,30 @@ export const insertMessage = mutation({
   },
 });
 
+// Internal action to store file in Convex and get public URL
 export const fileUpload = internalAction({
   args: {
-    file: v.array(v.bytes()),
-    name: v.string(),
+    file: v.array(v.bytes()), // ArrayBuffer[]
   },
   async handler(ctx, args) {
-    const storage = new Storage({
-      email: "nahianku1@gmail.com",
-      password: "#!/bin/bashAdmin123",
-    });
+    const blob = new Blob(args.file);
+    const storageId = await ctx.storage.store(blob);
+    const fileUrl = await ctx.storage.getUrl(storageId);
 
-    storage.on("ready", async () => {
-      const fileContent = await storage.upload(
-        args.name,
-        Buffer.concat(args.file.map((ab) => Buffer.from(ab)))
-      ).complete;
-      console.log("The file was uploaded!", fileContent);
-    });
+    console.log("Storage ID:", storageId);
+    console.log("File URL:", fileUrl); // 👈 log what you’re returning
+
+    return fileUrl;
   },
 });
 
+// Query to get all messages between two users
 export const getMessages = query({
   args: {
     from: v.string(),
     to: v.string(),
   },
   handler: async (ctx, args) => {
-    console.log("Fetching messages between", args.from, "and", args.to);
-
     return await ctx.db
       .query("message")
       .filter((q) =>

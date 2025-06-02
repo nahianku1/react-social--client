@@ -1319,7 +1319,7 @@ function RouteComponent() {
 
                 {/* Chat Input at Bottom */}
                 {/* Overlay Chat Input Form */}
-                <div className="absolute bottom-0 left-0 w-full z-20">
+                <div className="w-full z-20">
                   <form onSubmit={handleSubmit}>
                     <div className="p-4 border-t bg-white flex items-center gap-2">
                       <Input
