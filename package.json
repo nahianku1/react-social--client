@@ -23,6 +23,7 @@
     "convex": "^1.24.3",
     "framer-motion": "^12.12.1",
     "lucide-react": "^0.511.0",
+    "megajs": "^1.3.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hot-toast": "^2.5.2",

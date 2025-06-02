@@ -17,5 +17,9 @@ export default defineSchema({
       })
     ),
   }),
- 
+  notification: defineTable({
+    caller: v.string(),
+    time: v.string(),
+    callee: v.string(),
+  }),
 });

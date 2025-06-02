@@ -42,7 +42,7 @@ type message = {
   to: string;
   email: string;
   name: string;
-  content: string | ArrayBuffer;
+  content?: string | ArrayBuffer;
   targetedPeer?: string;
   isFile?: boolean;
   fileName?: string;
@@ -87,16 +87,11 @@ function RouteComponent() {
   const [calleeId, setCalleeId] = useState<string>("");
   const [callType, setCallType] = useState<string>("");
   const fileSenderMeta = useRef<Record<string, unknown>>({});
-  const [targetedPeer, setTargetedPeer] = useState<Record<string, unknown>>({});
+  const [targetedPeer, setTargetedPeer] = useState<
+    Record<string, unknown> | null | boolean
+  >(null);
   const [callerName, setCallerName] = useState<string>("");
   const [iceCandidates, setIceCandidates] = useState<RTCIceCandidate[]>([]);
-  const [callTime, setCallTime] = useState<Date | string | null>(null);
-  const [notification, setNotification] = useState<
-    {
-      caller: string;
-      time: Date;
-    }[]
-  >([]);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [offer, setOffer] = useState<RTCSessionDescriptionInit | null>(null);
   const [isReceivingVideoCall, setIsReceivingVideoCall] = useState(false);
@@ -123,6 +118,13 @@ function RouteComponent() {
   const convex = useConvex();
 
   const createMessage = useMutation(api.message.insertMessage);
+  const notification = useQuery(api.notification.getNotification, {
+    callee: user?.email!,
+  });
+
+  useEffect(() => {
+    console.log("Notification:", notification);
+  }, [notification]);
 
   const handleLogout = () => {
     localStorage.setItem("authenticated", "false");
@@ -135,10 +137,11 @@ function RouteComponent() {
     const input = form.elements[0] as HTMLInputElement;
     const newMessage: message = {
       from: user?.email!,
-      to: targetedPeer.targetEmail as string,
+      to: targetedPeer!.targetEmail as string,
       email: user?.email!,
       name: user?.name!,
       content: input?.value!,
+      targetedPeer: id,
     };
     setMessages((prev) => (prev ? [...prev, newMessage] : [newMessage]));
     datachannelRef.current![targetedPeer?.targetId as string]?.send(
@@ -237,7 +240,7 @@ function RouteComponent() {
     // Send file metadata
     const newMessage: message = {
       from: user?.email!,
-      to: targetedPeer.targetEmail as string,
+      to: targetedPeer!.targetEmail as string,
       targetedPeer: id,
       email: user?.email!,
       name: user?.name!,
@@ -261,7 +264,7 @@ function RouteComponent() {
     reader.onload = () => {
       const newMessage: message = {
         from: user?.email!,
-        to: targetedPeer.targetEmail as string,
+        to: targetedPeer!.targetEmail as string,
         targetedPeer: id,
         email: user?.email!,
         name: user?.name!,
@@ -271,7 +274,6 @@ function RouteComponent() {
         meta: { size: file.size, type: file.type },
       };
       setMessages((prev) => [...prev, newMessage]);
-      // createMessage(newMessage);
     };
 
     reader.readAsDataURL(file);
@@ -307,7 +309,7 @@ function RouteComponent() {
         targetedPeer: id,
         meta: { size: file.size, type: file.type },
         from: user?.email!,
-        to: targetedPeer.targetEmail as string,
+        to: targetedPeer!.targetEmail as string,
         email: user?.email!,
         name: user?.name!,
       })
@@ -374,6 +376,10 @@ function RouteComponent() {
           setMessages((prev) => [...prev, parsed]);
           console.log(newMessage);
           createMessage(newMessage);
+          setTargetedPeer({
+            targetEmail: parsed?.from,
+            targetId: parsed?.targetedPeer as string,
+          });
         }
       } catch {
         console.error("Failed to parse message data:", data);
@@ -415,6 +421,10 @@ function RouteComponent() {
         datachannelRef!.current[peerId]!.onmessage = (e) =>
           handleMessage(e.data);
         delete fileReceiveState.current[peerId];
+         setTargetedPeer({
+            targetEmail: fileSenderMeta?.current?.from,
+            targetId:fileSenderMeta?.current?.targetedPeer as string,
+          });
       }
     }
   };
@@ -619,16 +629,18 @@ function RouteComponent() {
           ringtoneRef.current!.pause();
           ringtoneRef.current!.currentTime = 0;
           ringtoneRef.current = null;
-          setNotification((prev) => [
-            ...prev,
-            { caller: callerName, time: new Date() },
-          ]);
+          convex.mutation(api.notification.insertNotification, {
+            callee: user?.email!,
+            caller: callerName,
+            time: new Date().toISOString(),
+          });
           socketRef.current?.emit("rejected", { to: from, cType });
           if (cType === "video") {
             setIsReceivingVideoCall(false);
           } else {
             setIsReceivingAudioCall(false);
           }
+          window.location.href = "/";
         }, 30000);
 
         if (cType === "audio") {
@@ -1072,9 +1084,9 @@ function RouteComponent() {
                   <DropdownMenuTrigger asChild>
                     <Bell fill="black" className="cursor-pointer" />
                   </DropdownMenuTrigger>
-                  {notification.toString() ? (
+                  {notification?.length ? (
                     <DropdownMenuContent className="mt-2 w-80">
-                      {notification.map((it) => (
+                      {notification?.map((it) => (
                         <DropdownMenuItem className="flex flex-col items-start gap-1">
                           <span className="font-semibold text-red-600">
                             Missed Call
@@ -1083,7 +1095,7 @@ function RouteComponent() {
                             You missed a call from {it.caller}
                           </span>
                           <span className="text-xs text-gray-400">
-                            {getCallTimeDiffs(callTime!)}
+                            {getCallTimeDiffs(it.time)}
                           </span>
                         </DropdownMenuItem>
                       ))}

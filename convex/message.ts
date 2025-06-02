@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { internalAction, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { Storage } from "megajs";
+import { internal } from "../convex/_generated/api";
 
 export const insertMessage = mutation({
   args: {
@@ -20,16 +22,16 @@ export const insertMessage = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const url = await ctx.scheduler.runAfter(0, internal.message.fileUpload, {
-      file: args.content instanceof Array ? args.content : [],
+    await ctx.scheduler.runAfter(0, internal.message.fileUpload, {
+      file: args.content as ArrayBuffer[],
+      name: args.fileName as string,
     });
-
     await ctx.db.insert("message", {
       from: args.from,
       to: args.to,
       email: args.email,
       name: args.name,
-      content: url,
+      content: args.content,
       isFile: args.isFile || false,
       fileName: args.fileName || null,
       meta: args.meta || null,
@@ -40,19 +42,21 @@ export const insertMessage = mutation({
 export const fileUpload = internalAction({
   args: {
     file: v.array(v.bytes()),
+    name: v.string(),
   },
   async handler(ctx, args) {
-    // Convert ArrayBuffer to Uint8Array and flatten
-    const uint8Arrays = args.file.map((arrBuf) => new Uint8Array(arrBuf));
-    const totalLength = uint8Arrays.reduce((acc, arr) => acc + arr.length, 0);
-    const flat = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const arr of uint8Arrays) {
-      flat.set(arr, offset);
-      offset += arr.length;
-    }
-    const storageId = await ctx.storage.store(new Blob([flat]));
-    return await ctx.storage.getUrl(storageId);
+    const storage = new Storage({
+      email: "nahianku1@gmail.com",
+      password: "#!/bin/bashAdmin123",
+    });
+
+    storage.on("ready", async () => {
+      const fileContent = await storage.upload(
+        args.name,
+        Buffer.concat(args.file.map((ab) => Buffer.from(ab)))
+      ).complete;
+      console.log("The file was uploaded!", fileContent);
+    });
   },
 });
 
