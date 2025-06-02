@@ -1,6 +1,7 @@
 import { internalAction, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 export const insertMessage = mutation({
   args: {
@@ -8,7 +9,7 @@ export const insertMessage = mutation({
     to: v.string(),
     email: v.string(),
     name: v.string(),
-    content: v.string(),
+    content: v.union(v.string(), v.array(v.bytes())),
     isFile: v.optional(v.boolean()),
     fileName: v.optional(v.string()),
     meta: v.optional(
@@ -19,14 +20,16 @@ export const insertMessage = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    console.log({ args });
-    
+    const url = await ctx.scheduler.runAfter(0, internal.message.fileUpload, {
+      file: args.content instanceof Array ? args.content : [],
+    });
+
     await ctx.db.insert("message", {
       from: args.from,
       to: args.to,
       email: args.email,
       name: args.name,
-      content: args.content,
+      content: url,
       isFile: args.isFile || false,
       fileName: args.fileName || null,
       meta: args.meta || null,
@@ -39,7 +42,17 @@ export const fileUpload = internalAction({
     file: v.array(v.bytes()),
   },
   async handler(ctx, args) {
-    await ctx.storage.store(new Blob(args.file));
+    // Convert ArrayBuffer to Uint8Array and flatten
+    const uint8Arrays = args.file.map((arrBuf) => new Uint8Array(arrBuf));
+    const totalLength = uint8Arrays.reduce((acc, arr) => acc + arr.length, 0);
+    const flat = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const arr of uint8Arrays) {
+      flat.set(arr, offset);
+      offset += arr.length;
+    }
+    const storageId = await ctx.storage.store(new Blob([flat]));
+    return await ctx.storage.getUrl(storageId);
   },
 });
 

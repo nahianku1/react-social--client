@@ -42,7 +42,7 @@ type message = {
   to: string;
   email: string;
   name: string;
-  content: string;
+  content: string | ArrayBuffer;
   targetedPeer?: string;
   isFile?: boolean;
   fileName?: string;
@@ -397,6 +397,18 @@ function RouteComponent() {
         const blob = new Blob(state.blobParts, {
           type: state.newMessage.meta?.type,
         });
+        console.log(blob);
+        const newMessage: message = {
+          from: state.newMessage.from,
+          to: state.newMessage.to,
+          email: state.newMessage.email,
+          name: state.newMessage.name,
+          content: state.blobParts,
+          isFile: true,
+          fileName: state.newMessage.fileName,
+          meta: state.newMessage.meta,
+        };
+        createMessage(newMessage);
         const url = URL.createObjectURL(blob);
         setMessages((prev) => [...prev, { ...state.newMessage, content: url }]);
         // Clean up state for this peer
