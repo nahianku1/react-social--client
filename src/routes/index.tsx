@@ -135,6 +135,7 @@ function RouteComponent() {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const input = form.elements[0] as HTMLInputElement;
+    if (!input.value.trim() || !targetedPeer) return;
     const newMessage: message = {
       from: user?.email!,
       to: targetedPeer!.targetEmail as string,
