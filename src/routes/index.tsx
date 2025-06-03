@@ -668,12 +668,7 @@ function RouteComponent() {
     socketRef.current!.on("endCall", ({ from, cType }) => {
       console.log("Call ended by peer");
 
-      if (from === callerId) {
-        setNotification((prev) => [
-          ...prev,
-          { caller: callerName, time: new Date() },
-        ]);
-      }
+  
 
       if (timeoutRef.current !== null) {
         ringtoneRef.current!.pause();
