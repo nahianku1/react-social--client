@@ -618,7 +618,6 @@ function RouteComponent() {
         setCallerName(callerName);
         setOffer(offer);
         setCallType(cType);
-        setCallTime(new Date());
         const ringtone = new Audio("/messenger_video_call.mp3");
         ringtone.volume = 1.0;
         ringtone.loop = true;
