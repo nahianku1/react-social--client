@@ -422,10 +422,10 @@ function RouteComponent() {
         datachannelRef!.current[peerId]!.onmessage = (e) =>
           handleMessage(e.data);
         delete fileReceiveState.current[peerId];
-         setTargetedPeer({
-            targetEmail: fileSenderMeta?.current?.from,
-            targetId:fileSenderMeta?.current?.targetedPeer as string,
-          });
+        setTargetedPeer({
+          targetEmail: fileSenderMeta?.current?.from,
+          targetId: fileSenderMeta?.current?.targetedPeer as string,
+        });
       }
     }
   };
@@ -626,6 +626,11 @@ function RouteComponent() {
         if (ringtoneRef.current) {
           ringtoneRef.current.play();
         }
+        if (cType === "audio") {
+          setIsReceivingAudioCall(true);
+        } else {
+          setIsReceivingVideoCall(true);
+        }
         timeoutRef.current = window.setTimeout(() => {
           ringtoneRef.current!.pause();
           ringtoneRef.current!.currentTime = 0;
@@ -643,12 +648,6 @@ function RouteComponent() {
           }
           window.location.href = "/";
         }, 30000);
-
-        if (cType === "audio") {
-          setIsReceivingAudioCall(true);
-        } else {
-          setIsReceivingVideoCall(true);
-        }
       }
     );
 
