@@ -22,4 +22,9 @@ export default defineSchema({
     time: v.string(),
     callee: v.string(),
   }),
+  calltime: defineTable({
+    duration: v.number(),
+    caller: v.string(),
+    callee: v.string(),
+  }),
 });

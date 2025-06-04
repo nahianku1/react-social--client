@@ -30,12 +30,12 @@ import {
   RefreshCcw,
   VideoIcon,
 } from "lucide-react";
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { getCallTimeDiffs } from "@/utils/getCallTimeDiffs";
 import { useConvex, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { getCallDuration } from "@/utils/getCallDuratin";
 
 type message = {
   from: string;
@@ -86,6 +86,7 @@ function RouteComponent() {
   const [callerId, setCallerId] = useState<string>("");
   const [calleeId, setCalleeId] = useState<string>("");
   const [callType, setCallType] = useState<string>("");
+  const [callTime, setCallTime] = useState<Date | string>("");
   const fileSenderMeta = useRef<Record<string, unknown>>({});
   const [targetedPeer, setTargetedPeer] = useState<
     Record<string, unknown> | null | boolean
@@ -118,13 +119,57 @@ function RouteComponent() {
   const convex = useConvex();
 
   const createMessage = useMutation(api.message.insertMessage);
+
   const notification = useQuery(api.notification.getNotification, {
     callee: user?.email!,
   });
 
-  useEffect(() => {
-    console.log("Notification:", notification);
-  }, [notification]);
+  const cleanupCall = () => {
+    console.log("Cleaning up call...");
+    // Stop media streams
+    localVideoStreamRef.current?.getTracks().forEach((track) => track.stop());
+    localAudioStreamRef.current?.getTracks().forEach((track) => track.stop());
+    localVideoStreamRef.current = null;
+    localAudioStreamRef.current = null;
+
+    // Reset video and audio elements
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    if (localAudioRef.current) localAudioRef.current.srcObject = null;
+    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+
+    // Stop and reset ringtone
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+      clearTimeout(timeoutRef.current);
+      ringtoneRef.current = null;
+    }
+
+
+    // Close peer connection
+    if (callPeerRef.current) {
+      callPeerRef.current.close();
+      callPeerRef.current = null;
+    }
+
+    // Reset states
+    setInVideoCall(false);
+    setInAudioCall(false);
+    setIsReceivingVideoCall(false);
+    setIsReceivingAudioCall(false);
+    setAccepted(false);
+    setIsMuted(false);
+    setIsCameraOff(false);
+    setCallerId("");
+    setCalleeId("");
+    setCallType("");
+    setCallTime("");
+    setCallerName("");
+    setIceCandidates([]);
+    setOffer(null);
+    setFacingMode("user");
+  };
 
   const handleLogout = () => {
     localStorage.setItem("authenticated", "false");
@@ -204,7 +249,6 @@ function RouteComponent() {
       pc.ontrack = (event) => {
         console.log("Remote Audio");
         console.log(event.streams[0]);
-
         if (remoteAudioRef.current)
           remoteAudioRef.current.srcObject = event.streams[0];
       };
@@ -238,7 +282,6 @@ function RouteComponent() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Send file metadata
     const newMessage: message = {
       from: user?.email!,
       to: targetedPeer!.targetEmail as string,
@@ -259,7 +302,6 @@ function RouteComponent() {
       );
     }
 
-    // Read and send file in chunks
     const reader = new FileReader();
 
     reader.onload = () => {
@@ -281,7 +323,6 @@ function RouteComponent() {
     sendToPeers(file);
   };
 
-  // Store file receiving state per peer
   const fileReceiveState = useRef<
     Record<
       string,
@@ -302,7 +343,6 @@ function RouteComponent() {
       datachannelRef.current![targetedPeer?.targetId as string];
     if (!dataChannel || dataChannel.readyState !== "open") return;
 
-    // Send file metadata first
     dataChannel.send(
       JSON.stringify({
         isFile: true,
@@ -319,7 +359,6 @@ function RouteComponent() {
     const reader = new FileReader();
 
     reader.onload = (e) => {
-      // Only send ArrayBuffer, not string
       if (
         e.target?.result instanceof ArrayBuffer &&
         dataChannel.readyState === "open"
@@ -354,7 +393,6 @@ function RouteComponent() {
       fileSenderMeta.current = parsed;
       try {
         if (parsed.isFile) {
-          // Initialize file receive state for this peer
           if (parsed.targetedPeer) {
             fileReceiveState.current[parsed.targetedPeer as string] = {
               blobParts: [],
@@ -386,7 +424,6 @@ function RouteComponent() {
         console.error("Failed to parse message data:", data);
       }
     } else if (data instanceof ArrayBuffer) {
-      // Find the current peer receiving the file
       const peerId = fileSenderMeta.current?.targetedPeer as string;
       if (!peerId || !fileReceiveState.current[peerId]) return;
 
@@ -394,12 +431,10 @@ function RouteComponent() {
       state.blobParts.push(data);
       state.receivedBytes += data.byteLength;
 
-      // Debug log
       console.log(
         `Received ${state.receivedBytes} bytes of ${state.fileSize} bytes`
       );
 
-      // File transfer completed
       if (state.receivedBytes >= state.fileSize) {
         const blob = new Blob(state.blobParts, {
           type: state.newMessage.meta?.type,
@@ -418,7 +453,6 @@ function RouteComponent() {
         createMessage(newMessage);
         const url = URL.createObjectURL(blob);
         setMessages((prev) => [...prev, { ...state.newMessage, content: url }]);
-        // Clean up state for this peer
         datachannelRef!.current[peerId]!.onmessage = (e) =>
           handleMessage(e.data);
         delete fileReceiveState.current[peerId];
@@ -431,16 +465,13 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("https://react-social-server.onrender.com", {
+    socketRef.current = io("http://localhost:3000", {
       withCredentials: true,
     });
 
     return () => {
+      cleanupCall();
       socketRef.current?.disconnect();
-      if (timeoutRef.current !== null) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
     };
   }, []);
 
@@ -499,11 +530,8 @@ function RouteComponent() {
       }
     });
 
-    // Call Negotiation
-
     if (callType && !accepted) {
-      console.log("Getting user media!!");
-
+      console.log("Getting user media for caller...");
       navigator?.mediaDevices
         ?.getUserMedia({
           video:
@@ -538,6 +566,7 @@ function RouteComponent() {
                   offer,
                   cType: callType,
                   candidates: iceCandidates,
+                  callerName: user?.name,
                 });
               }
             };
@@ -547,9 +576,7 @@ function RouteComponent() {
     }
 
     if (callType && accepted) {
-      console.log("Getting user media!!");
-      console.log({ callType });
-
+      console.log("Getting user media for callee...");
       navigator?.mediaDevices
         ?.getUserMedia({
           video:
@@ -590,15 +617,15 @@ function RouteComponent() {
                   cType: callType,
                   candidates: iceCandidates,
                 });
+                if (callType === "video") {
+                  setIsReceivingVideoCall(false);
+                  setInVideoCall(true);
+                } else {
+                  setIsReceivingAudioCall(false);
+                  setInAudioCall(true);
+                }
               }
             };
-            if (callType === "video") {
-              setIsReceivingVideoCall(false);
-              setInVideoCall(true);
-            } else {
-              setIsReceivingAudioCall(false);
-              setInAudioCall(true);
-            }
           });
         })
         .catch((err) => console.error("Error accessing media devices:", err));
@@ -607,6 +634,7 @@ function RouteComponent() {
     socketRef.current!.on(
       "incomingCall",
       ({ from, callerName, offer, cType, candidates }) => {
+        console.log("Incoming call from:", from);
         if (timeoutRef.current !== null) {
           ringtoneRef.current!.pause();
           ringtoneRef.current!.currentTime = 0;
@@ -618,6 +646,7 @@ function RouteComponent() {
         setCallerName(callerName);
         setOffer(offer);
         setCallType(cType);
+        setCallTime(new Date());
         const ringtone = new Audio("/messenger_video_call.mp3");
         ringtone.volume = 1.0;
         ringtone.loop = true;
@@ -631,64 +660,44 @@ function RouteComponent() {
           setIsReceivingVideoCall(true);
         }
         timeoutRef.current = window.setTimeout(() => {
-          ringtoneRef.current!.pause();
-          ringtoneRef.current!.currentTime = 0;
-          ringtoneRef.current = null;
+          cleanupCall();
           convex.mutation(api.notification.insertNotification, {
             callee: user?.email!,
             caller: callerName,
             time: new Date().toISOString(),
           });
           socketRef.current?.emit("rejected", { to: from, cType });
-          if (cType === "video") {
-            setIsReceivingVideoCall(false);
-          } else {
-            setIsReceivingAudioCall(false);
-          }
           window.location.href = "/";
         }, 30000);
       }
     );
 
     socketRef.current!.on("rejected", ({ cType }) => {
-      if (timeoutRef.current !== null) {
-        ringtoneRef.current!.pause();
-        ringtoneRef.current!.currentTime = 0;
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      if (cType === "video") {
-        setInVideoCall(false);
-      } else {
-        setInAudioCall(false);
-      }
+      console.log("Call rejected, type:", cType);
+      cleanupCall();
       window.location.href = "/";
     });
 
     socketRef.current!.on("endCall", ({ from, cType }) => {
-      console.log("Call ended by peer");
+      console.log("Call ended by:", from, "type:", cType);
+      cleanupCall();
+      socketRef.current?.emit("callEnded", {
+        to: callerId || calleeId,
+        cType,
+      });
+      window.location.href = "/";
+    });
 
-  
-
-      if (timeoutRef.current !== null) {
-        ringtoneRef.current!.pause();
-        ringtoneRef.current!.currentTime = 0;
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      if (cType === "video") {
-        setInVideoCall(false);
-      } else {
-        setInAudioCall(false);
-      }
+    socketRef.current!.on("callEnded", ({ cType }) => {
+      console.log("Call ended, type:", cType);
+      cleanupCall();
       window.location.href = "/";
     });
 
     socketRef.current!.on(
       "callAnswered",
       async ({ answer, cType, candidates }) => {
-        console.log({ answer, cType, candidates });
-
+        console.log("Call answered:", { answer, cType, candidates });
         if (callPeerRef.current) {
           if (callPeerRef.current.signalingState === "have-local-offer") {
             await callPeerRef.current.setRemoteDescription(answer);
@@ -697,7 +706,7 @@ function RouteComponent() {
             });
           } else {
             console.warn(
-              `Skipping setRemoteDescription for  — current state: ${callPeerRef.current.signalingState}`
+              `Skipping setRemoteDescription — current state: ${callPeerRef.current.signalingState}`
             );
           }
         }
@@ -710,67 +719,65 @@ function RouteComponent() {
         }
       }
     );
+
+    return () => {
+      socketRef.current?.off("connect");
+      socketRef.current?.off("getusers");
+      socketRef.current?.off("new-peer");
+      socketRef.current?.off("offer");
+      socketRef.current?.off("answer");
+      socketRef.current?.off("ice-candidate");
+      socketRef.current?.off("peer-disconnected");
+      socketRef.current?.off("incomingCall");
+      socketRef.current?.off("rejected");
+      socketRef.current?.off("endCall");
+      socketRef.current?.off("callEnded");
+      socketRef.current?.off("callAnswered");
+    };
   }, [user, callType, accepted]);
 
   const initiateCall = (toId: string, cType: string) => {
+    console.log("Initiating call to:", toId, "type:", cType);
+    setCalleeId(toId);
+    setCallType(cType);
     if (cType === "video") {
-      setCalleeId(toId);
-      setCallType(cType);
       setInVideoCall(true);
     } else {
-      setCalleeId(toId);
-      setCallType(cType);
       setInAudioCall(true);
     }
   };
 
   const acceptCall = (cType: string) => {
-    console.log(cType);
+    console.log("Accepting call, type:", cType);
+    setAccepted(true);
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+      ringtoneRef.current = null;
+    }
+    if (timeoutRef.current !== null) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     if (cType === "video") {
-      setAccepted(true);
+      setIsReceivingVideoCall(false);
       setInVideoCall(true);
-      if (ringtoneRef.current !== null) {
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-        clearTimeout(timeoutRef.current!);
-        ringtoneRef.current = null;
-      }
     } else {
-      setAccepted(true);
+      setIsReceivingAudioCall(false);
       setInAudioCall(true);
-      if (ringtoneRef.current !== null) {
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-        clearTimeout(timeoutRef.current!);
-        ringtoneRef.current = null;
-      }
     }
   };
 
   const rejectCall = (cType: string) => {
-    if (timeoutRef.current !== null) {
-      ringtoneRef.current!.pause();
-      ringtoneRef.current!.currentTime = 0;
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
+    console.log("Rejecting call, type:", cType);
+    cleanupCall();
     socketRef.current?.emit("rejected", { to: callerId, cType });
-    if (cType === "video") {
-      setIsReceivingVideoCall(false);
-    } else {
-      setIsReceivingAudioCall(false);
-    }
-    window.location.href = "/";
   };
 
-  const endCall = (cType: string) => {
+  const endCall = async (cType: string) => {
+    console.log("Ending call, type:", cType);
     socketRef.current?.emit("endCall", { to: callerId || calleeId, cType });
-    if (cType === "video") {
-      setInVideoCall(false);
-    } else {
-      setInAudioCall(false);
-    }
-    window.location.href = "/";
+    cleanupCall();
   };
 
   const handleTargetedUser = async (targetPeer: {
@@ -800,7 +807,7 @@ function RouteComponent() {
     } else {
       const audioTrack = (
         localAudioRef.current?.srcObject as MediaStream
-      ).getAudioTracks()[0];
+      )?.getAudioTracks()[0];
       if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
       setIsMuted(!isMuted);
     }
@@ -817,36 +824,24 @@ function RouteComponent() {
   const switchCamera = async () => {
     try {
       const newFacingMode = facingMode === "user" ? "environment" : "user";
-
-      // Stop current video tracks
       localVideoStreamRef.current
         ?.getVideoTracks()
         .forEach((track) => track.stop());
-
-      // Get new stream from the opposite camera
       const newStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { exact: newFacingMode } },
-        audio: true, // keep audio, or set to false if not needed
+        audio: true,
       });
-
       const newVideoTrack = newStream.getVideoTracks()[0];
       console.log({ newVideoTrack });
-
-      // Replace local video element
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = newStream;
       }
-
-      // Replace the video track in the peer connection
       const sender = callPeerRef
         .current!.getSenders()
         .find((s) => s.track?.kind === "video");
-
       if (sender) {
         await sender.replaceTrack(newVideoTrack);
       }
-
-      // Update state and refs
       localVideoStreamRef.current = newStream;
       setFacingMode(newFacingMode);
     } catch (err) {
@@ -878,7 +873,6 @@ function RouteComponent() {
                   </AvatarFallback>
                 </Avatar>
                 <h2 className="text-2xl text-white font-semibold">
-                  {" "}
                   {callerName}
                 </h2>
                 <p className="text-sm text-zinc-400">is calling you...</p>
@@ -907,7 +901,6 @@ function RouteComponent() {
       {inVideoCall && (
         <div className="flex items-center justify-center min-h-screen text-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-6xl">
-            {/* Local video as fullscreen background */}
             <div className="fixed inset-0 w-screen h-screen z-10 overflow-hidden">
               <video
                 ref={localVideoRef}
@@ -916,7 +909,6 @@ function RouteComponent() {
                 className="w-full h-full object-cover bg-gray-900"
                 style={{ position: "absolute", top: 0, left: 0, zIndex: 1 }}
               />
-              {/* Remote video as overlay in the corner */}
               <div
                 className="absolute top-6 right-6 w-32 h-48 md:w-40 md:h-68 rounded-xl overflow-hidden shadow-2xl border-4 border-white/20 bg-gray-900"
                 style={{ zIndex: 2 }}
@@ -929,8 +921,6 @@ function RouteComponent() {
                 />
               </div>
             </div>
-
-            {/* Overlay button group at the bottom */}
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-auto flex justify-center gap-4 z-20">
               <Button
                 onClick={() => endCall("video")}
@@ -981,7 +971,6 @@ function RouteComponent() {
                   {callerName}
                 </h2>
                 <p className="text-sm text-zinc-400">is calling you...</p>
-
                 <div className="flex gap-4 mt-6">
                   <Button
                     onClick={() => acceptCall("audio")}
@@ -1056,8 +1045,6 @@ function RouteComponent() {
         !isReceivingAudioCall &&
         !isReceivingVideoCall && (
           <div className="min-h-screen bg-custom-back text-custom flex flex-col">
-            {/* Top Bar */}
-
             <div className="flex justify-between items-center px-6 py-4 bg-white/10 backdrop-blur-md shadow-md">
               <div className="text-xs sm:text-xl ml-7 sm:ml-0 font-semibold flex gap-1.5 items-center">
                 <svg
@@ -1073,7 +1060,6 @@ function RouteComponent() {
                 <span className="text-xs sm:text-xl">Messenger</span>
               </div>
               <div className="flex gap-4 items-center justify-center">
-                {" "}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Bell fill="black" className="cursor-pointer" />
@@ -1126,8 +1112,6 @@ function RouteComponent() {
                 </DropdownMenu>
               </div>
             </div>
-
-            {/* Sidebar - Online Users (Desktop) */}
             <div className="flex flex-1 overflow-hidden">
               <div className="hidden sm:block w-64 p-3 space-y-2 overflow-y-auto h-full max-h-screen">
                 <h2 className="text-lg font-semibold mb-2">Online Users</h2>
@@ -1157,7 +1141,7 @@ function RouteComponent() {
                         </div>
                         <span>{user?.name}</span>
                       </div>
-                      <div className="flex  gap-2">
+                      <div className="flex gap-2">
                         <Button
                           onClick={() => initiateCall(user?.id, "video")}
                           disabled={user.id === id}
@@ -1177,8 +1161,6 @@ function RouteComponent() {
                   ))}
                 </div>
               </div>
-
-              {/* Sheet for Online Users (Mobile) */}
               <div className="sm:hidden absolute left-2 top-2 z-30">
                 <Sheet>
                   <SheetTrigger asChild>
@@ -1252,10 +1234,7 @@ function RouteComponent() {
                   </SheetContent>
                 </Sheet>
               </div>
-
-              {/* Chat Section */}
               <div className="flex-1 relative flex flex-col bg-white overflow-hidden min-h-0">
-                {/* Message List */}
                 {!targetedPeer ? (
                   <div className="flex items-center justify-center h-full">
                     <p className="text-gray-500">Select a user to chat</p>
@@ -1310,9 +1289,6 @@ function RouteComponent() {
                     </div>
                   </ScrollArea>
                 )}
-
-                {/* Chat Input at Bottom */}
-                {/* Overlay Chat Input Form */}
                 <div className="w-full z-20">
                   <form onSubmit={handleSubmit}>
                     <div className="p-4 border-t bg-white flex items-center gap-2">
