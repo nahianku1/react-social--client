@@ -634,12 +634,6 @@ function RouteComponent() {
       "incomingCall",
       ({ from, callerName, offer, cType, candidates }) => {
         console.log("Incoming call from:", from);
-        if (timeoutRef.current !== null) {
-          ringtoneRef.current!.pause();
-          ringtoneRef.current!.currentTime = 0;
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
         setIceCandidates(candidates);
         setCallerId(from);
         setCallerName(callerName);
