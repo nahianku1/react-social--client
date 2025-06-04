@@ -461,7 +461,7 @@ function RouteComponent() {
         });
       }
     }
-  }
+  };
 
   useEffect(() => {
     socketRef.current = io(import.meta.env.VITE_SERVER_URL, {
