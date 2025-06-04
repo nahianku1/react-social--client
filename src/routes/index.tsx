@@ -146,7 +146,6 @@ function RouteComponent() {
       ringtoneRef.current = null;
     }
 
-
     // Close peer connection
     if (callPeerRef.current) {
       callPeerRef.current.close();
@@ -465,7 +464,7 @@ function RouteComponent() {
   };
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:3000", {
+    socketRef.current = io(import.meta.env.VITE_SERVER_URL, {
       withCredentials: true,
     });
 
@@ -667,7 +666,6 @@ function RouteComponent() {
             time: new Date().toISOString(),
           });
           socketRef.current?.emit("rejected", { to: from, cType });
-          window.location.href = "/";
         }, 30000);
       }
     );
@@ -675,23 +673,11 @@ function RouteComponent() {
     socketRef.current!.on("rejected", ({ cType }) => {
       console.log("Call rejected, type:", cType);
       cleanupCall();
-      window.location.href = "/";
     });
 
     socketRef.current!.on("endCall", ({ from, cType }) => {
       console.log("Call ended by:", from, "type:", cType);
       cleanupCall();
-      socketRef.current?.emit("callEnded", {
-        to: callerId || calleeId,
-        cType,
-      });
-      window.location.href = "/";
-    });
-
-    socketRef.current!.on("callEnded", ({ cType }) => {
-      console.log("Call ended, type:", cType);
-      cleanupCall();
-      window.location.href = "/";
     });
 
     socketRef.current!.on(
@@ -776,8 +762,8 @@ function RouteComponent() {
 
   const endCall = async (cType: string) => {
     console.log("Ending call, type:", cType);
-    socketRef.current?.emit("endCall", { to: callerId || calleeId, cType });
     cleanupCall();
+    socketRef.current?.emit("endCall", { to: callerId || calleeId, cType });
   };
 
   const handleTargetedUser = async (targetPeer: {

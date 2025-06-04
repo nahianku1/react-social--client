@@ -15,7 +15,7 @@ const router = createRouter({ routeTree });
 
 console.log("Convex URL:", import.meta.env.VITE_CONVEX_URL);
 
-
+console.log("Server URL:", import.meta.env.VITE_SERVER_URL);
 // Register the router instance for type safety
 declare module "@tanstack/react-router" {
   interface Register {
