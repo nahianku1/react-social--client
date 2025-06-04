@@ -126,30 +126,64 @@ function RouteComponent() {
 
   const cleanupCall = () => {
     console.log("Cleaning up call...");
-    // Stop media streams
-    localVideoStreamRef.current?.getTracks().forEach((track) => track.stop());
-    localAudioStreamRef.current?.getTracks().forEach((track) => track.stop());
+
+    // Stop all media tracks
+    [localVideoStreamRef.current, localAudioStreamRef.current].forEach(
+      (stream) => {
+        if (stream) {
+          console.log(`Stopping tracks for stream: ${stream.id}`);
+          stream.getTracks().forEach((track) => {
+            console.log(`Stopping track: ${track.kind} - ${track.id}`);
+            track.stop();
+            track.enabled = false;
+          });
+        }
+      }
+    );
+
+    // Reset stream references
     localVideoStreamRef.current = null;
     localAudioStreamRef.current = null;
+    console.log("Streams reset");
 
     // Reset video and audio elements
-    if (localVideoRef.current) localVideoRef.current.srcObject = null;
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
-    if (localAudioRef.current) localAudioRef.current.srcObject = null;
-    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+      console.log("Local video reset");
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+      console.log("Remote video reset");
+    }
+    if (localAudioRef.current) {
+      localAudioRef.current.srcObject = null;
+      console.log("Local audio reset");
+    }
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = null;
+      console.log("Remote audio reset");
+    }
 
     // Stop and reset ringtone
     if (ringtoneRef.current) {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
-      clearTimeout(timeoutRef.current);
       ringtoneRef.current = null;
+      console.log("Ringtone reset");
+    }
+
+    // Clear timeout
+    if (timeoutRef.current !== null) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+      console.log("Timeout cleared");
     }
 
     // Close peer connection
     if (callPeerRef.current) {
       callPeerRef.current.close();
       callPeerRef.current = null;
+      console.log("Peer connection closed");
     }
 
     // Reset states
@@ -168,6 +202,7 @@ function RouteComponent() {
     setIceCandidates([]);
     setOffer(null);
     setFacingMode("user");
+    console.log("States reset");
   };
 
   const handleLogout = () => {
@@ -748,16 +783,26 @@ function RouteComponent() {
     }
   };
 
-  const rejectCall = (cType: string) => {
+  const rejectCall = async (cType: string) => {
     console.log("Rejecting call, type:", cType);
     cleanupCall();
     socketRef.current?.emit("rejected", { to: callerId, cType });
+    await checkMediaDevices(); // Debug active devices
+  };
+
+  const checkMediaDevices = async () => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    console.log(
+      "Active media devices:",
+      devices.filter((d) => d.kind.includes("input"))
+    );
   };
 
   const endCall = async (cType: string) => {
     console.log("Ending call, type:", cType);
     cleanupCall();
     socketRef.current?.emit("endCall", { to: callerId || calleeId, cType });
+    await checkMediaDevices(); // Debug active devices
   };
 
   const handleTargetedUser = async (targetPeer: {
